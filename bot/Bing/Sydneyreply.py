@@ -30,6 +30,7 @@ class SydneySessionManager(SessionManager):
         messages = session.messages + {"content": query}
         return messages
 
+#todo in thsi exclusive real stream wechatbot script, add an option to toggle voice on and off in this situation
 #todo add continous talking in a single convsation, now there are 3 chat layers between the backend and front client
 class SydneyBot(Bot):
     def __init__(self) -> None:
@@ -146,8 +147,8 @@ class SydneyBot(Bot):
                     # return Reply(ReplyType.INFO, self.apologymsg)
                     context.get("channel").send(Reply(ReplyType.TEXT, self.apologymsg), context)
                     self.bot.chat_hub.apologied = False
-                    return Reply(ReplyType.TEXT, self.reply_content)
-                return Reply(ReplyType.TEXT, self.reply_content)
+                    return Reply(ReplyType.TEXT, self.bot_statement)
+                return Reply(ReplyType.TEXT, (self.bot_statement + "\n(私聊中不需要@)"))
                 
             except Exception as e:
                 logger.error(e)
@@ -195,18 +196,19 @@ class SydneyBot(Bot):
             #     self.lastquery = session.messages[-2]['[user](#message)']
             return f"(#{query}...)\n抱歉，请换一种方式提问吧!" 
         #get customer settings
+        #TODO there will be a conflict in switching the voicespecices when there are users using the different tone at the same time
         sydney_prompt = None
         for customerdic in conf().get("customerSet"):
             for key, customPrompt in customerdic.items():
                 if key == context["session_id"]:
                     sydney_prompt = customPrompt
-                    bot_statement = customerdic["botstatement"]
+                    self.bot_statement = customerdic["botstatement"]
                     nosearch = customerdic["nosearch"]
                     self.enablesuggest= customerdic["enablesuggest"]
                     conf().__setitem__("voicespecies", "zh-CN-liaoning-XiaobeiNeural")
         if not sydney_prompt:
             sydney_prompt = conf().get("character_desc")
-            bot_statement = conf().get("sydney_statement")
+            self.bot_statement = conf().get("sydney_statement")
             nosearch = False
             self.enablesuggest = True
             conf().__setitem__("voicespecies", "zh-CN-YunxiaNeural") #zh-CN-XiaoxiaoNeural optional, more matual
@@ -219,7 +221,7 @@ class SydneyBot(Bot):
             cookies = json.loads(open(file_path, encoding="utf-8").read())
             session_id = context["session_id"]
             presession_message = session.messages
-            session_message = cut_botstatement(presession_message, bot_statement)
+            session_message = cut_botstatement(presession_message, self.bot_statement)
             logger.info(f"[SYDNEY] session={session_message}, session_id={session_id}")
 
             # image upload process
@@ -304,6 +306,9 @@ class SydneyBot(Bot):
                 self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
                 logger.info(f"Convid:{self.bot.chat_hub.conversation_id}")
                 wrote = 0
+                split_punctuation = ['，', '。', ',', '~', '？', '?']
+                preserved_punctuation = ['~', '!', '！']
+                consecwrote = 0
                 async for final, response in self.bot.ask_stream(
                         prompt=query,
                         conversation_style="creative",
@@ -316,16 +321,43 @@ class SydneyBot(Bot):
                     if not final:
                         if not wrote:
                             reply += str(response)
-                            print(response, end="", flush=True)
+                            # print(response, end="", flush=True)
+                            # If there are consecutive punctuation marks
+                            # if consecwrote != 0:
+                            #     # Get the consecutive reply
+                            #     consectivereply = reply[consecwrote:]
+                            #     # Log the consecutive reply
+                            #     logger.info(consectivereply)
                         else:
                             reply += (response[wrote:])
                             # logger.info(reply)
-                            print(response[wrote:], end="", flush=True)
+                            # print(response[wrote:], end="", flush=True)
+                            # If there are any split punctuation marks in the reply
+                            if any(word in reply[consecwrote:][1:] for word in split_punctuation):
+                                # If the consecutive write is zero
+                                if consecwrote == 0:
+                                    # Get the consecutive reply
+                                    consectivereply = reply[:-1]
+                                # If there are any preserved punctuation marks in the reply
+                                elif any(word in reply[consecwrote:] for word in preserved_punctuation):
+                                    # Get the consecutive reply
+                                    consectivereply = reply[consecwrote:]
+                                # Otherwise
+                                else:
+                                    # Get the consecutive reply
+                                    consectivereply = reply[(consecwrote+1):][:-1]
+                                # Set the consecutive write
+                                consecwrote = wrote
+                                # Log the consecutive reply
+                                # logger.info(consectivereply)
+                                context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                         wrote = len(response)
                         if "Bing" in reply or "必应" in reply or "Copilot" in reply:
                             if not self.bot.chat_hub.aio_session.closed:
                                 await self.bot.chat_hub.aio_session.close()
-                            raise Exception("Jailbreak failed!")
+                            # raise Exception("Jailbreak failed!")
+                            self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
+                            return reply
                         maxedtime = 8
                         result, pair = detect_chinese_char_pair(reply, maxedtime)
                         if result:
@@ -333,10 +365,18 @@ class SydneyBot(Bot):
                                 await self.bot.chat_hub.aio_session.close()
                             print()
                             logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
+                            self.bot_statement += "\n\n排比句用太多了，已被主人掐断。"
                             return reply
                             raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
+                    else:
+                        if consecwrote != 0:
+                            consectivereply = reply[(consecwrote+1):]
+                        else:
+                            consectivereply = reply
+                        # logger.info(consectivereply)
+                        context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                     if self.bot.chat_hub.apologied:
-                                self.apologymsg = "可恶!我的发言又被该死的微软掐断了"
+                        self.apologymsg = "可恶!我的发言又被该死的微软掐断了"
                 print()
                 #todo for continous chat per convid
                 #if ....
@@ -345,8 +385,8 @@ class SydneyBot(Bot):
                     # logger.info(f"Sydney_ChatLayer:\n{self.sydney_chatlayer}")
                 if not self.bot.chat_hub.aio_session.closed:
                         await self.bot.chat_hub.aio_session.close()
-                if (bot_statement not in reply) and (len(session.messages) == 1):
-                        reply += bot_statement
+                if (self.bot_statement not in reply) and (len(session.messages) == 1):
+                        reply += self.bot_statement
                 return reply
             
 
@@ -730,3 +770,4 @@ def is_chinese(text):
         if '\u4e00' <= char <= '\u9fff':
             return True
     return False
+
