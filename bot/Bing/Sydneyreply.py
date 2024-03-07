@@ -32,6 +32,7 @@ class SydneySessionManager(SessionManager):
 
 #TODO in this exclusive real stream wechatbot script, add an option to toggle voice on and off in this situation
 #TODO add continous talking in a single convsation, now there are 3 chat layers between the backend and front client
+#TODO send stickers in chat
 class SydneyBot(Bot):
     def __init__(self) -> None:
         super().__init__()
@@ -125,7 +126,7 @@ class SydneyBot(Bot):
                 #optional, current not use the suggestion responses
                 if self.suggestions != None and self.enablesuggest:
                     reply_content = reply_content + "\n\n----------回复建议------------\n" + self.suggestions
-                if len(session.messages) == 2:
+                if len(session.messages) == 0: #FIXME optional, this is for promoting 
                     #done, locate the first time message and send promote info
                     #do this when not using voice reply
                     try:
@@ -152,7 +153,7 @@ class SydneyBot(Bot):
                     context.get("channel").send(Reply(ReplyType.TEXT, self.apologymsg), context)
                     self.bot.chat_hub.apologied = False
                     return Reply(ReplyType.TEXT, reply_content)
-                return Reply(ReplyType.TEXT, (reply_content + "\n(私聊中不需要@)"))
+                return Reply(ReplyType.TEXT, reply_content)
                 
             except Exception as e:
                 logger.error(e)
@@ -224,8 +225,7 @@ class SydneyBot(Bot):
             file_path = os.path.abspath("./cookies.json")
             cookies = json.loads(open(file_path, encoding="utf-8").read())
             session_id = context["session_id"]
-            presession_message = session.messages
-            session_message = cut_botstatement(presession_message, self.bot_statement)
+            session_message = session.messages
             logger.info(f"[SYDNEY] session={session_message}, session_id={session_id}")
 
             # image upload process
@@ -310,8 +310,8 @@ class SydneyBot(Bot):
                 self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
                 logger.info(f"Convid:{self.bot.chat_hub.conversation_id}")
                 wrote = 0
-                split_punctuation = ['，', '。', ',', '~', '？', '?']
-                preserved_punctuation = ['~', '!', '！']
+                split_punctuation =  ['~', '!', '！', '?', '？', '。']
+                preserved_punctuation = ['，', ',', '```']
                 consecwrote = 0
                 async for final, response in self.bot.ask_stream(
                         prompt=query,
@@ -325,36 +325,26 @@ class SydneyBot(Bot):
                     if not final:
                         if not wrote:
                             reply += str(response)
-                            # print(response, end="", flush=True)
-                            # If there are consecutive punctuation marks
-                            # if consecwrote != 0:
-                            #     # Get the consecutive reply
-                            #     consectivereply = reply[consecwrote:]
-                            #     # Log the consecutive reply
-                            #     logger.info(consectivereply)
+                            print(response, end="", flush=True)
                         else:
                             reply += (response[wrote:])
                             # logger.info(reply)
-                            # print(response[wrote:], end="", flush=True)
+                            print(response[wrote:], end="", flush=True)
                             # If there are any split punctuation marks in the reply
                             if any(word in reply[consecwrote:][1:] for word in split_punctuation):
                                 # If the consecutive write is zero
                                 if consecwrote == 0:
                                     # Get the consecutive reply
-                                    consectivereply = reply[:-1]
+                                    consectivereply = reply
                                 # If there are any preserved punctuation marks in the reply
                                 elif any(word in reply[consecwrote:] for word in preserved_punctuation):
-                                    # Get the consecutive reply
-                                    consectivereply = reply[consecwrote:]
-                                # Otherwise
+                                    consectivereply = reply[consecwrote:][1:]
                                 else:
-                                    # Get the consecutive reply
-                                    consectivereply = reply[(consecwrote+1):][:-1]
-                                # Set the consecutive write
+                                    consectivereply = reply[(consecwrote+1):]
                                 consecwrote = wrote
-                                # Log the consecutive reply
                                 # logger.info(consectivereply)
                                 context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                                await asyncio.sleep(0.8)
                         wrote = len(response)
                         if "Bing" in reply or "必应" in reply or "Copilot" in reply:
                             if not self.bot.chat_hub.aio_session.closed:
@@ -362,23 +352,27 @@ class SydneyBot(Bot):
                             # raise Exception("Jailbreak failed!")
                             self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                             return reply
-                        maxedtime = 8
+                        
+                        maxedtime = 5
                         result, pair = detect_chinese_char_pair(reply, maxedtime)
                         if result:
                             if not self.bot.chat_hub.aio_session.closed:
                                 await self.bot.chat_hub.aio_session.close()
                             print()
                             logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
+                            consectivereply = reply[(consecwrote+1):]
+                            context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                             self.bot_statement += "\n\n排比句用太多了，已被主人掐断。"
                             return reply
                             raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
                     else:
+                        # logger.info(reply)
                         if consecwrote != 0:
                             consectivereply = reply[(consecwrote+1):]
-                        else:
-                            consectivereply = reply
-                        # logger.info(consectivereply)
-                        context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                            consectivereply = consectivereply.strip()
+                            # logger.info(consectivereply)
+                            if consectivereply != "" and ("continuations" not in consectivereply):
+                                context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                     if self.bot.chat_hub.apologied:
                         self.apologymsg = "可恶!我的发言又被该死的微软掐断了"
                 print()
@@ -389,13 +383,11 @@ class SydneyBot(Bot):
                     # logger.info(f"Sydney_ChatLayer:\n{self.sydney_chatlayer}")
                 if not self.bot.chat_hub.aio_session.closed:
                         await self.bot.chat_hub.aio_session.close()
-                if (self.bot_statement not in reply) and (len(session.messages) == 1):
-                        reply += self.bot_statement
                 return reply
             
 
-            reply = await reedgegpt_chat_stream()
-            return reply
+            bot_chatlayer_reply = await reedgegpt_chat_stream()
+            return bot_chatlayer_reply
 
             async def sydneyqtv1chat():
                 '''
@@ -501,24 +493,6 @@ class SydneyBot(Bot):
                     # fileinfo = ""
                     # webPageinfo = ""
                     return reply
-            
-            async def reedgegpt_chat_no_stream():
-                chat_response = dict()
-                self.bot = Chatbot
-                self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
-                async def reedgegpt_ask():
-                    nonlocal chat_response
-                    response = await self.bot.ask(
-                        prompt=query, conversation_style="creative", webpage_context=preContext, locale="zh-TW", attachment=imgurl
-                    )
-                    return response
-                
-                chat_response = await reedgegpt_ask()
-                if chat_response is not None:
-                    response_text = chat_response.get("item").get("messages")[-1].get("text")
-                    if response_text is not None and not response_text.isspace():
-                        await self.bot.close()
-                        return response_text
             
         except Exception as e:
             logger.error(e)
