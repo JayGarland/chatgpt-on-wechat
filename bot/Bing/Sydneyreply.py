@@ -30,14 +30,13 @@ class SydneySessionManager(SessionManager):
         messages = session.messages + {"content": query}
         return messages
 
-#todo in thsi exclusive real stream wechatbot script, add an option to toggle voice on and off in this situation
-#todo add continous talking in a single convsation, now there are 3 chat layers between the backend and front client
+#TODO in this exclusive real stream wechatbot script, add an option to toggle voice on and off in this situation
+#TODO add continous talking in a single convsation, now there are 3 chat layers between the backend and front client
 class SydneyBot(Bot):
     def __init__(self) -> None:
         super().__init__()
         self.sessions = SessionManager(SydneySession, model=conf().get("model") or "gpt-3.5-turbo")
         self.args = {}
-        self.reply_content= None
         self.current_responding_task = None
         self.lastquery = None
         self.failedmsg = False
@@ -46,7 +45,8 @@ class SydneyBot(Bot):
         self.lastsession_id = None
         self.bot = Chatbot
         self.apologymsg = ""
-        #todo for continous chat per convid
+        self.bot_statement = ""
+        #TODO for continous chat per convid
         # self.sydney_chatlayer = ""
 
     def reply(self, query, context: Context = None) -> Reply:
@@ -101,8 +101,8 @@ class SydneyBot(Bot):
             
             try:
                 # logger.info("[SYDNEY] session query={}, bot_statement hasn't been cut...".format(session.messages))
-                self.reply_content = asyncio.run(self.handle_async_response(session, query, context))
-                if self.reply_content:
+                reply_content = asyncio.run(self.handle_async_response(session, query, context))
+                if reply_content:
                     # logger.info(self.lastquery) 
                     if self.failedmsg:
                         # logger.info(self.lastquery)
@@ -113,48 +113,52 @@ class SydneyBot(Bot):
                             second_last_usermsg = curtusers_arr[-1]
                             self.lastquery = list(second_last_usermsg.values())[-1]
                             # logger.info(self.lastquery)
-                        return Reply(ReplyType.INFO, self.reply_content)
+                        return Reply(ReplyType.INFO, reply_content)
                 else:
-                    return Reply(ReplyType.TEXT, self.reply_content)
+                    return Reply(ReplyType.TEXT, reply_content)
                 #when no exception
-                self.sessions.session_reply(self.reply_content, session_id) #load into the session messages
+                self.sessions.session_reply(reply_content, session_id) #load into the session messages
+
+                #CRITICAL!!
+                reply_content = self.bot_statement
+
                 #optional, current not use the suggestion responses
                 if self.suggestions != None and self.enablesuggest:
-                    self.reply_content = self.reply_content + "\n\n----------回复建议------------\n" + self.suggestions
-                if len(session.messages) == 0:
+                    reply_content = reply_content + "\n\n----------回复建议------------\n" + self.suggestions
+                if len(session.messages) == 2:
                     #done, locate the first time message and send promote info
                     #do this when not using voice reply
                     try:
                         credit = conf().get("sydney_credit")
-                        self.reply_content += credit
+                        reply_content += credit
                         # qrpayimg = open('F:\GitHub\chatgpt-on-wechat\wechatdDonate.jpg', 'rb')
                         #optional add the customize promote info in the end soon
                         qridimg = open('.\wechatID.jpg', 'rb')
-                        context.get("channel").send(Reply(ReplyType.TEXT, self.reply_content), context)
+                        context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
                         # context.get("channel").send(Reply(ReplyType.TEXT, credit), context)
                         # context.get("channel").send(Reply(ReplyType.IMAGE, qrpayimg), context)
                         return Reply(ReplyType.IMAGE, qridimg)
                     except Exception:
-                        context.get("channel").send(Reply(ReplyType.TEXT, self.reply_content), context)
+                        context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
                         # context.get("channel").send(Reply(ReplyType.TEXT, credit), context)
                         # context.get("channel").send(Reply(ReplyType.IMAGE, qrpayimg), context)
                         return Reply(ReplyType.IMAGE, qridimg)
-                # self.reply_content = self.process_url(self.reply_content)
+                # reply_content = self.process_url(reply_content)
                 if self.apologymsg != "" and self.bot.chat_hub.apologied:
                     #when not using voice reply
-                    # context.get("channel").send(Reply(ReplyType.TEXT, self.reply_content), context)
+                    # context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
                     # self.bot.chat_hub.apologied = False
                     # return Reply(ReplyType.INFO, self.apologymsg)
                     context.get("channel").send(Reply(ReplyType.TEXT, self.apologymsg), context)
                     self.bot.chat_hub.apologied = False
-                    return Reply(ReplyType.TEXT, self.bot_statement)
-                return Reply(ReplyType.TEXT, (self.bot_statement + "\n(私聊中不需要@)"))
+                    return Reply(ReplyType.TEXT, reply_content)
+                return Reply(ReplyType.TEXT, (reply_content + "\n(私聊中不需要@)"))
                 
             except Exception as e:
                 logger.error(e)
                 # context.get("channel").send(Reply(ReplyType.TEXT, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}"), context)
                 return Reply(ReplyType.INFO, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}")
-                # return Reply(ReplyType.TEXT, self.reply_content)
+                # return Reply(ReplyType.TEXT, reply_content)
             
         # #todo IMAGE_CREATE    
         # elif context.type == ContextType.IMAGE_CREATE:
@@ -277,7 +281,7 @@ class SydneyBot(Bot):
                     rest_messages += f"\n{keyPerson}\n{message}\n"
 
             # rest_messages = rest_messages.strip("\n")  # Remove any extra newlines
-            #todo for continous chats in a single convid
+            #TODO for continous chats in a single convid
             preContext += rest_messages
             
             #todo add plugins
@@ -297,7 +301,7 @@ class SydneyBot(Bot):
             async def reedgegpt_chat_stream():
                 #todo reply the current resp_text per 30s in a whole reply process
                 #todo add nosearchall option for different groups or conversations, current ON
-                #todo for continous chats in a single convid
+                #TODO for continous chats in a single convid
                 # session_grp = list
                 # if session_id not in session_grp:
                 #     self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
@@ -378,7 +382,7 @@ class SydneyBot(Bot):
                     if self.bot.chat_hub.apologied:
                         self.apologymsg = "可恶!我的发言又被该死的微软掐断了"
                 print()
-                #todo for continous chat per convid
+                #TODO for continous chat per convid
                 #if ....
                     # self.sydney_chatlayer += preContext + f"\n[User]\n{query}\n[Assistant]\n{reply}"
                     # preContext = ""
