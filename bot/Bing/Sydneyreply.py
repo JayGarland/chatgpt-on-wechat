@@ -324,12 +324,12 @@ class SydneyBot(Bot):
                 ):
                     if not final:
                         if not wrote:
-                            reply += str(response)
                             print(response, end="", flush=True)
+                            reply += str(response[wrote:])
                         else:
-                            reply += (response[wrote:])
-                            # logger.info(reply)
                             print(response[wrote:], end="", flush=True)
+                            reply += str(response[wrote:])
+                            # logger.info(reply)
                             # If there are any split punctuation marks in the reply
                             if any(word in reply[consecwrote:][1:] for word in split_punctuation):
                                 # If the consecutive write is zero
