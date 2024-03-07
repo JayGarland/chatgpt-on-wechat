@@ -180,8 +180,7 @@ class SydneyBot(Bot):
         except asyncio.CancelledError:
             self.failedmsg = True
             # await self.bot.close()
-            if not self.bot.chat_hub.aio_session.closed:
-                await self.bot.chat_hub.aio_session.close()
+            
             logger.info("Conv Closed Successful!")
             # context.get("channel").send(Reply(ReplyType.INFO, "你打断了本仙女的思考! \U0001F643"), context)
             return "你打断了本仙女的思考! \U0001F643"
@@ -310,7 +309,7 @@ class SydneyBot(Bot):
                 self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
                 logger.info(f"Convid:{self.bot.chat_hub.conversation_id}")
                 wrote = 0
-                split_punctuation =  ['~', '!', '！', '?', '？', '。']
+                split_punctuation =  ['~', '!', '！', '?', '？', '。', '.']
                 preserved_punctuation = ['，', ',', '```']
                 consecwrote = 0
                 async for final, response in self.bot.ask_stream(
@@ -325,10 +324,10 @@ class SydneyBot(Bot):
                     if not final:
                         if not wrote:
                             print(response, end="", flush=True)
-                            reply += str(response[wrote:])
+                            reply += str(response[wrote:]).replace("\n", "")
                         else:
                             print(response[wrote:], end="", flush=True)
-                            reply += str(response[wrote:])
+                            reply += str(response[wrote:]).replace("\n", "")
                             # logger.info(reply)
                             # If there are any split punctuation marks in the reply
                             if any(word in reply[consecwrote:][1:] for word in split_punctuation):
@@ -340,15 +339,13 @@ class SydneyBot(Bot):
                                 elif any(word in reply[consecwrote:] for word in preserved_punctuation):
                                     consectivereply = reply[consecwrote:][1:]
                                 else:
-                                    consectivereply = reply[(consecwrote+1):]
+                                    consectivereply = reply[consecwrote:][1:]
                                 consecwrote = wrote
                                 # logger.info(consectivereply)
                                 context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
-                                await asyncio.sleep(0.8)
+                                await asyncio.sleep(0.5)
                         wrote = len(response)
                         if "Bing" in reply or "必应" in reply or "Copilot" in reply:
-                            if not self.bot.chat_hub.aio_session.closed:
-                                await self.bot.chat_hub.aio_session.close()
                             # raise Exception("Jailbreak failed!")
                             self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                             return reply
@@ -356,8 +353,6 @@ class SydneyBot(Bot):
                         maxedtime = 5
                         result, pair = detect_chinese_char_pair(reply, maxedtime)
                         if result:
-                            if not self.bot.chat_hub.aio_session.closed:
-                                await self.bot.chat_hub.aio_session.close()
                             print()
                             logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
                             consectivereply = reply[(consecwrote+1):]
@@ -368,21 +363,19 @@ class SydneyBot(Bot):
                     else:
                         # logger.info(reply)
                         if consecwrote != 0:
-                            consectivereply = reply[(consecwrote+1):]
-                            consectivereply = consectivereply.strip()
+                            consectivereply = reply[consecwrote:]
+                            consectivereply = consectivereply.replace("\n", "")
                             # logger.info(consectivereply)
                             if consectivereply != "" and ("continuations" not in consectivereply):
                                 context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                     if self.bot.chat_hub.apologied:
-                        self.apologymsg = "可恶!我的发言又被该死的微软掐断了"
+                        self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"
                 print()
                 #TODO for continous chat per convid
                 #if ....
                     # self.sydney_chatlayer += preContext + f"\n[User]\n{query}\n[Assistant]\n{reply}"
                     # preContext = ""
                     # logger.info(f"Sydney_ChatLayer:\n{self.sydney_chatlayer}")
-                if not self.bot.chat_hub.aio_session.closed:
-                        await self.bot.chat_hub.aio_session.close()
                 return reply
             
 
@@ -495,6 +488,8 @@ class SydneyBot(Bot):
                     return reply
             
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             logger.error(e)
             if "throttled" in str(e) or "Throttled" in str(e) or "Authentication" in str(e):
                 logger.warn("[SYDNEY] ConnectionError: {}".format(e))
@@ -504,8 +499,7 @@ class SydneyBot(Bot):
                 logger.warn("[SYDNEY] CAPTCHAError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我走丢了，请联系我的主人。(CAPTCHA!)\U0001F300"), context)
                 return 
-            if not self.bot.chat_hub.aio_session.closed:
-                await self.bot.chat_hub.aio_session.close()
+            
             time.sleep(2)
             #done reply a retrying message
             logger.warn(f"[SYDNEY] do retry, times={retry_count}")
