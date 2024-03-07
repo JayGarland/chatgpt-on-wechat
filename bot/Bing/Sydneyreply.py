@@ -323,7 +323,7 @@ class SydneyBot(Bot):
                     if not final:
                         if not wrote:
                             print(response, end="", flush=True)
-                            reply += str(response[wrote:]).replace("\n", "")
+                            reply += str(response[wrote:])
                         else:
                             print(response[wrote:], end="", flush=True)
                             reply += str(response[wrote:]).replace("\n", "")
@@ -342,22 +342,22 @@ class SydneyBot(Bot):
                                 consecwrote = wrote
                                 # logger.info(consectivereply)
                                 context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
-                                await asyncio.sleep(0.5)
                         wrote = len(response)
                         # if "Bing" in reply or "必应" in reply or "Copilot" in reply:
                         #     # raise Exception("Jailbreak failed!")
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
                         
-                        maxedtime = 5
+                        maxedtime = 8
                         result, pair = detect_chinese_char_pair(reply, maxedtime)
-                        if result:
+                        if result:#TODO if cut then cut the incomplete msg part within the whole reply
                             await self.bot.close()
                             print()
                             logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
-                            consectivereply = reply[(consecwrote+1):]
-                            context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                            # consectivereply = reply[(consecwrote+1):]
+                            # context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                             self.bot_statement += "\n\n排比句用太多了，已被主人掐断。"
+                            reply = split_sentences(reply, split_punctuation)[:-1]
                             return reply
                             raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
                     else:
@@ -743,3 +743,21 @@ def is_chinese(text):
             return True
     return False
 
+def split_sentences(text, split_punctuation):
+  """Splits a text into sentences based on the provided punctuation marks.
+
+  Args:
+    text: The text to split.
+    split_punctuation: A list of punctuation marks to split on.
+
+  Returns:
+    A list of sentences.
+  """
+  sentences = []
+  start = 0
+  for i, char in enumerate(text):
+    if char in split_punctuation:
+      sentences.append(text[start:i+1])
+      start = i + 1
+  sentences.append(text[start:])
+  return sentences
