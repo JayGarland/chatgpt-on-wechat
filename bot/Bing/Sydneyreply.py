@@ -205,9 +205,8 @@ class SydneyBot(Bot):
             #     self.lastquery = session.messages[-2]['[user](#message)']
             return f"(#{query}...)\n抱歉，请换一种方式提问吧!" 
         #get customer settings
-        #TODO there will be a conflict in switching the voicespecices when there are users using the different tone at the same time
-        #TODO switch prompt by godcmd 
-        #TODO when one toggle voice then the voice setting is global, it's not good
+        #TODO set voicespecices independently for users when there are users using the different tone at the same time
+        #TODO switch persona by godcmd 
         sydney_prompt = None
         for customerdic in conf().get("customerSet"):
             for key, customPrompt in customerdic.items():
@@ -345,7 +344,7 @@ class SydneyBot(Bot):
                         #     # raise Exception("Jailbreak failed!")
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
-                        maxedtime = 8
+                        maxedtime = 8#TODO only add this parrallel filter in exclusive persona
                         result, pairs = detect_chinese_char_pair(reply, maxedtime)
                         if result and len(pairs) in range(3, 5):
                             # await self.bot.close()
