@@ -104,6 +104,7 @@ class SydneyBot(Bot):
             
             if context["isinprocess"] and context["stream"]:
                 session.messages.pop()
+                self.lastquery = "" #FIXME or not..
                 return Reply(ReplyType.INFO, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             try:
                 # logger.info("[SYDNEY] session query={}, bot_statement hasn't been cut...".format(session.messages))
@@ -181,14 +182,14 @@ class SydneyBot(Bot):
             reply_content = await self.current_responding_task
         except asyncio.CancelledError:
             self.failedmsg = True
-            await self.bot.close()
+            # await self.bot.close()
             logger.info("Conv Closed Successful!")
             # context.get("channel").send(Reply(ReplyType.INFO, "你打断了本仙女的思考! \U0001F643"), context)
             self.current_responding_task = None
-            context["isinprocess"] = False
+            self.user_data["isinprocess"] = False
             return "你打断了本仙女的思考! \U0001F643"
         self.current_responding_task = None
-        context["isinprocess"] = False
+        self.user_data["isinprocess"] = False
         return reply_content
         
 
@@ -216,13 +217,14 @@ class SydneyBot(Bot):
                     nosearch = customerdic["nosearch"]
                     self.enablesuggest= customerdic["enablesuggest"]
                     conf().__setitem__("voicespecies", "zh-CN-liaoning-XiaobeiNeural")
+                    parrellfilter = True
         if not sydney_prompt:
             sydney_prompt = conf().get("character_desc")
             self.bot_statement = conf().get("sydney_statement")
             nosearch = False
             self.enablesuggest = True
             conf().__setitem__("voicespecies", "zh-CN-YunxiaNeural") #zh-CN-XiaoxiaoNeural optional, more matual
-                
+            parrellfilter = False
         preContext = sydney_prompt
 
         try:
@@ -335,6 +337,18 @@ class SydneyBot(Bot):
                             reply += str(response[wrote:]).replace("\n", "")
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
+                            if parrellfilter:
+                                maxedtime = 5
+                                result, pairs = detect_chinese_char_pair(reply, maxedtime)
+                                if result and len(pairs) in range(2, 5):
+                                    # await self.bot.close()
+                                    print()
+                                    logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pairs}")
+                                    self.bot_statement += "\n\n排比句用太多了，已被掐断。"
+                                    reply = split_sentences(reply, split_punctuation)[:-1]
+                                    reply = ''.join(reply)
+                                    return reply
+                                    raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
                             if not context["voice"] and context["stream"]:
                                 if any(word in consectivereply for word in split_punctuation):
                                     context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
@@ -344,17 +358,6 @@ class SydneyBot(Bot):
                         #     # raise Exception("Jailbreak failed!")
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
-                        maxedtime = 8#TODO only add this parrallel filter in exclusive persona
-                        result, pairs = detect_chinese_char_pair(reply, maxedtime)
-                        if result and len(pairs) in range(3, 5):
-                            # await self.bot.close()
-                            print()
-                            logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pairs}")
-                            self.bot_statement += "\n\n排比句用太多了，已被掐断。"
-                            reply = split_sentences(reply, split_punctuation)[:-maxedtime]
-                            reply = ''.join(reply)
-                            return reply
-                            raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
                     if self.bot.chat_hub.apologied and context["stream"]:
                         reply = split_sentences(reply, split_punctuation)[:-1]
                         reply = ''.join(reply)
@@ -490,7 +493,7 @@ class SydneyBot(Bot):
                 logger.warn("[SYDNEY] CAPTCHAError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我走丢了，请联系我的主人。(CAPTCHA!)\U0001F300"), context)
                 return 
-            await self.bot.close()
+            # await self.bot.close()
             time.sleep(2)
             #done reply a retrying message
             logger.warn(f"[SYDNEY] do retry, times={retry_count}")
