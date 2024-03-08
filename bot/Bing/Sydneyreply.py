@@ -309,8 +309,7 @@ class SydneyBot(Bot):
                 logger.info(f"Convid:{self.bot.chat_hub.conversation_id}")
                 wrote = 0
                 split_punctuation =  ['~', '!', '！', '?', '？', '。', '.', ':', '：']
-                # preserved_punctuation = ['，', ',', '```']
-                consecwrote = 0
+                consectivereply = ""
                 async for final, response in self.bot.ask_stream(
                         prompt=query,
                         conversation_style="creative",
@@ -323,51 +322,32 @@ class SydneyBot(Bot):
                     if not final:
                         if not wrote:
                             print(response, end="", flush=True)
-                            reply += str(response[wrote:])
+                            reply += response[wrote:]
+                            consectivereply += str(response[wrote:]).replace("\n","")
                         else:
+                            # print(response)
                             print(response[wrote:], end="", flush=True)
                             reply += str(response[wrote:]).replace("\n", "")
                             # logger.info(reply)
-                            # If there are any split punctuation marks in the reply
-                            if any(word in reply[consecwrote:][1:] for word in split_punctuation):
-                                # If the consecutive write is zero
-                                if consecwrote == 0:
-                                    # Get the consecutive reply
-                                    consectivereply = reply
-                                # If there are any preserved punctuation marks in the reply
-                                # elif any(word in reply[consecwrote:][1:] for word in preserved_punctuation):
-                                #     consectivereply = reply[consecwrote:][1:]
-                                else:
-                                    consectivereply = reply[consecwrote:][1:]
-                                consecwrote = wrote
-                                # logger.info(consectivereply)
+                            consectivereply += str(response[wrote:]).replace("\n", "")
+                            if any(word in consectivereply for word in split_punctuation):
                                 context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                                consectivereply = ""
                         wrote = len(response)
                         # if "Bing" in reply or "必应" in reply or "Copilot" in reply:
                         #     # raise Exception("Jailbreak failed!")
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
-                        
-                        maxedtime = 8
+                        maxedtime = 6
                         result, pair = detect_chinese_char_pair(reply, maxedtime)
                         if result:#TODO if cut then cut the incomplete msg part within the whole reply
                             await self.bot.close()
                             print()
                             logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
-                            # consectivereply = reply[(consecwrote+1):]
-                            # context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                             self.bot_statement += "\n\n排比句用太多了，已被主人掐断。"
-                            reply = split_sentences(reply, split_punctuation)[:-1]
+                            reply = split_sentences(reply, split_punctuation)[:-3]
                             return reply
                             raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
-                    else:
-                        # logger.info(reply)
-                        if consecwrote != 0:
-                            consectivereply = reply[(consecwrote-1):]
-                            consectivereply = consectivereply
-                            # logger.info(consectivereply)
-                            if consectivereply != "" and len(consectivereply) > 2:
-                                context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                     if self.bot.chat_hub.apologied:
                         self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"
                 print()
@@ -714,7 +694,7 @@ def detect_chinese_char_pair(context, threshold=5):
     # loop through the context with a sliding window of size 2
     for i in range(len(context) - 1):
         # get the current pair of characters
-        pair = context[i:i+2]
+        pair = context[i:i+3]
         # check if both characters are chinese characters using the unicode range
         if '\u4e00' <= pair[0] <= '\u9fff' and '\u4e00' <= pair[1] <= '\u9fff':
             # increment the frequency of the pair or set it to 1 if not seen before
