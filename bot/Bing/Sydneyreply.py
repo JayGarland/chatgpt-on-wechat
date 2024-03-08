@@ -120,7 +120,7 @@ class SydneyBot(Bot):
                 self.sessions.session_reply(reply_content, session_id) #load into the session messages
 
                 #CRITICAL!!
-                if not conf().get("always_reply_voice"):
+                if not conf().get("always_reply_voice") and conf().get("stream"):
                     reply_content = self.bot_statement
 
                 #optional, current not use the suggestion responses
@@ -329,10 +329,10 @@ class SydneyBot(Bot):
                             reply += str(response[wrote:]).replace("\n", "")
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
-                            if any(word in consectivereply for word in split_punctuation):
-                                if not conf().get("always_reply_voice"):
-                                    context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
-                                consectivereply = ""
+                            if not conf().get("always_reply_voice") and conf().get("stream"):
+                                if any(word in consectivereply for word in split_punctuation):
+                                        context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                                        consectivereply = ""
                         wrote = len(response)
                         # if "Bing" in reply or "必应" in reply or "Copilot" in reply:
                         #     # raise Exception("Jailbreak failed!")

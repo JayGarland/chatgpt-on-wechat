@@ -168,7 +168,8 @@ available_setting = {
     "customerSet": [{"session_id": "promptsetting", "botstatement": "bottail"}],
     "nosearch": True,
     "enablesuggest": False,
-    "voicespecies": ""
+    "voicespecies": "",
+    "stream": True
 }
 
 

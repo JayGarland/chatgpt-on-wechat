@@ -72,6 +72,10 @@ COMMANDS = {
     "voiceon":{
         "alias": ["voiceon"],
         "desc": "toggleVoiceoutput",
+    },
+    "stream":{
+        "alias": ["stream"],
+        "desc": "togglestreamoutput"
     }
 }
 
@@ -339,6 +343,14 @@ class Godcmd(Plugin):
                     if not tts:
                         tts = conf().__setitem__("always_reply_voice", True)
                         ok, result = True, "全局语音输出已开启"
+                elif cmd == "stream":
+                    stream = conf().get("stream")
+                    if stream:
+                        conf().__setitem__("stream", False)
+                        ok, result = True, "流式输出已关闭"
+                    else:
+                        conf().__setitem__("stream", True)
+                        ok, result = True, "流式输出已开启"
                 logger.debug("[Godcmd] command: %s by %s" % (cmd, user))
             elif any(cmd in info["alias"] for info in ADMIN_COMMANDS.values()):
                 if isadmin:
