@@ -344,7 +344,8 @@ class Godcmd(Plugin):
                 elif cmd == "voiceon":
                     user_data = conf().get_user_data(user)
                     user_data["voice"] = True
-                    ok, result = True, "语音输出已开启"
+                    user_data["stream"] = False
+                    ok, result = True, "语音输出已开启, 注意流式传输此时失效!"
                 elif cmd == "streamoff":
                     user_data = conf().get_user_data(user)
                     user_data["stream"] = False
@@ -354,15 +355,6 @@ class Godcmd(Plugin):
                     user_data["stream"] = True
                     user_data["voice"] = False
                     ok, result = True, "流式输出已开启, 注意语音消息此时失效!"
-                # elif cmd == "stream":
-                #     user_data = conf().get_user_data(user)
-                #     if user_data["stream"]:
-                #         user_data["stream"] = False
-                #         ok, result = True, "流式输出已关闭"
-                #     else:
-                #         user_data["stream"] = True
-                #         user_data["voice"] = False
-                #         ok, result = True, "流式输出已开启, 注意语音消息此时失效!"
                 logger.debug("[Godcmd] command: %s by %s" % (cmd, user))
             elif any(cmd in info["alias"] for info in ADMIN_COMMANDS.values()):
                 if isadmin:
