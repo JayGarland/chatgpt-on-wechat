@@ -96,9 +96,13 @@ class SydneyBot(Bot):
                     passivereply = Reply(ReplyType.TEXT, "有什么问题吗？\U0001F337")
                 else:
                     passivereply = Reply(ReplyType.TEXT, "请耐心等待，本仙女正在思考问题呢。\U0001F9DA")
+            
             if passivereply:
                 return passivereply
             
+            if self.current_responding_task != None and conf().get("stream"):
+                session.messages.pop()
+                return Reply(ReplyType.INFO, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             try:
                 # logger.info("[SYDNEY] session query={}, bot_statement hasn't been cut...".format(session.messages))
                 reply_content = asyncio.run(self.handle_async_response(session, query, context))
@@ -126,10 +130,10 @@ class SydneyBot(Bot):
                 #optional, current not use the suggestion responses
                 if self.suggestions != None and self.enablesuggest:
                     reply_content = reply_content + "\n\n----------回复建议------------\n" + self.suggestions
-                if len(session.messages) == 0: #FIXME optional, this is for promoting 
+                if len(session.messages) == 2: #FIXME optional, this is for promoting 
                     #done, locate the first time message and send promote info
                     #do this when not using voice reply
-                    try:
+                    try:#testvoiceconflicthere
                         credit = conf().get("sydney_credit")
                         reply_content += credit
                         # qrpayimg = open('F:\GitHub\chatgpt-on-wechat\wechatdDonate.jpg', 'rb')
@@ -146,11 +150,7 @@ class SydneyBot(Bot):
                         return Reply(ReplyType.IMAGE, qridimg)
                 # reply_content = self.process_url(reply_content)
                 if self.apologymsg != "" and self.bot.chat_hub.apologied:
-                    #when not using voice reply
-                    # context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
-                    # self.bot.chat_hub.apologied = False
-                    # return Reply(ReplyType.INFO, self.apologymsg)
-                    context.get("channel").send(Reply(ReplyType.TEXT, self.apologymsg), context)
+                    # context.get("channel").send(Reply(ReplyType.TEXT, self.apologymsg), context)#Optional
                     self.bot.chat_hub.apologied = False
                     return Reply(ReplyType.TEXT, reply_content)
                 return Reply(ReplyType.TEXT, reply_content)
@@ -201,6 +201,7 @@ class SydneyBot(Bot):
         #get customer settings
         #TODO there will be a conflict in switching the voicespecices when there are users using the different tone at the same time
         #TODO switch prompt by godcmd 
+        #TODO when one toggle voice then the voice setting is global, it's not good
         sydney_prompt = None
         for customerdic in conf().get("customerSet"):
             for key, customPrompt in customerdic.items():
@@ -221,7 +222,7 @@ class SydneyBot(Bot):
 
         try:
             proxy = conf().get("proxy", "")                
-            file_path = os.path.relpath("./cookies.json")
+            file_path = os.path.relpath("../cookies.json")
             cookies = json.loads(open(file_path, encoding="utf-8").read())
             session_id = context["session_id"]
             session_message = session.messages
@@ -331,27 +332,27 @@ class SydneyBot(Bot):
                             consectivereply += str(response[wrote:]).replace("\n", "")
                             if not conf().get("always_reply_voice") and conf().get("stream"):
                                 if any(word in consectivereply for word in split_punctuation):
-                                        context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
-                                        consectivereply = ""
+                                    context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                                    consectivereply = ""
                         wrote = len(response)
                         # if "Bing" in reply or "必应" in reply or "Copilot" in reply:
                         #     # raise Exception("Jailbreak failed!")
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
-                        maxedtime = 5
+                        maxedtime = 8
                         result, pairs = detect_chinese_char_pair(reply, maxedtime)
-                        if result and len(pairs) > 4:
-                            # await self.bot.close()
+                        if result and len(pairs) in range(3, 5):
+                            await self.bot.close()
                             print()
                             logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pairs}")
                             self.bot_statement += "\n\n排比句用太多了，已被掐断。"
-                            reply = split_sentences(reply, split_punctuation)[:-maxedtime+1]
+                            reply = split_sentences(reply, split_punctuation)[:-maxedtime]
                             reply = ''.join(reply)
                             return reply
                             raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
-                    if self.bot.chat_hub.apologied:
-                        # reply = split_sentences(reply, split_punctuation)[:-1]
-                        # reply = ''.join(reply)
+                    if self.bot.chat_hub.apologied and conf().get("stream"):
+                        reply = split_sentences(reply, split_punctuation)[:-1]
+                        reply = ''.join(reply)
                         self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"
                 print()
                 #TODO for continous chat per convid
@@ -484,7 +485,7 @@ class SydneyBot(Bot):
                 logger.warn("[SYDNEY] CAPTCHAError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我走丢了，请联系我的主人。(CAPTCHA!)\U0001F300"), context)
                 return 
-            # await self.bot.close()
+            await self.bot.close()
             time.sleep(2)
             #done reply a retrying message
             logger.warn(f"[SYDNEY] do retry, times={retry_count}")
