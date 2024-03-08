@@ -346,12 +346,13 @@ class Godcmd(Plugin):
                     user_data["voice"] = True
                     ok, result = True, "语音输出已开启"
                 elif cmd == "stream":
-                    stream = conf().get("stream")
+                    user_data = conf().get_user_data(user)
+                    stream = user_data["stream"]
                     if stream:
-                        conf().__setitem__("stream", False)
+                        user_data["stream"] = False
                         ok, result = True, "流式输出已关闭"
                     else:
-                        conf().__setitem__("stream", True)
+                        user_data["stream"] = False
                         ok, result = True, "流式输出已开启"
                 logger.debug("[Godcmd] command: %s by %s" % (cmd, user))
             elif any(cmd in info["alias"] for info in ADMIN_COMMANDS.values()):

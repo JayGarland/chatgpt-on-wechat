@@ -50,6 +50,8 @@ class ChatChannel(Channel):
             context["origin_ctype"] = ctype
         if "voice" not in context:
             context["voice"] = False
+        if "stream" not in context:
+            context["stream"] = True
         # context首次传入时，receiver是None，根据类型设置receiver
         first_in = "receiver" not in context
         # 群名匹配过程，设置session_id和receiver
@@ -60,6 +62,7 @@ class ChatChannel(Channel):
             context["openai_api_key"] = user_data.get("openai_api_key")
             context["gpt_model"] = user_data.get("gpt_model")
             context["voice"] = user_data.get("voice")
+            context["stream"] = user_data.get("stream")
             if context.get("isgroup", False):
                 group_name = cmsg.other_user_nickname
                 group_id = cmsg.other_user_id

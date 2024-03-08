@@ -100,7 +100,7 @@ class SydneyBot(Bot):
             if passivereply:
                 return passivereply
             
-            if self.current_responding_task != None and conf().get("stream"):
+            if self.current_responding_task != None and context["stream"]:
                 session.messages.pop()
                 return Reply(ReplyType.INFO, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             try:
@@ -124,7 +124,7 @@ class SydneyBot(Bot):
                 self.sessions.session_reply(reply_content, session_id) #load into the session messages
 
                 #CRITICAL!!
-                if not context["voice"] and conf().get("stream"):
+                if not context["voice"] and context["stream"]:
                     reply_content = self.bot_statement
 
                 #optional, current not use the suggestion responses
@@ -331,7 +331,7 @@ class SydneyBot(Bot):
                             reply += str(response[wrote:]).replace("\n", "")
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
-                            if not context["voice"] and conf().get("stream"):
+                            if not context["voice"] and context["stream"]:
                                 if any(word in consectivereply for word in split_punctuation):
                                     context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                                     consectivereply = ""
