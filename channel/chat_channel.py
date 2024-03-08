@@ -389,8 +389,7 @@ class ChatChannel(Channel):
                             del self.sessions[session_id]
                         else:
                             semaphore.release()
-                    time.sleep(4) #rajayoux add receive msg interval
-            time.sleep(0.1)
+            time.sleep(1)
         
 
     # 取消session_id对应的所有任务，只能取消排队的消息和已提交线程池但未执行的任务
