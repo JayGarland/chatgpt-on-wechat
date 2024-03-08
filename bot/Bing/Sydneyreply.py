@@ -30,7 +30,6 @@ class SydneySessionManager(SessionManager):
         messages = session.messages + {"content": query}
         return messages
 
-#TODO in this exclusive real stream wechatbot script, add an option to toggle voice on and off in this situation
 #TODO add continous talking in a single convsation, now there are 3 chat layers between the backend and front client
 #TODO send stickers in chat
 class SydneyBot(Bot):
@@ -121,7 +120,8 @@ class SydneyBot(Bot):
                 self.sessions.session_reply(reply_content, session_id) #load into the session messages
 
                 #CRITICAL!!
-                reply_content = self.bot_statement
+                if not conf().get("always_reply_voice"):
+                    reply_content = self.bot_statement
 
                 #optional, current not use the suggestion responses
                 if self.suggestions != None and self.enablesuggest:
@@ -330,7 +330,8 @@ class SydneyBot(Bot):
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
                             if any(word in consectivereply for word in split_punctuation):
-                                context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                                if not conf().get("always_reply_voice"):
+                                    context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                                 consectivereply = ""
                         wrote = len(response)
                         # if "Bing" in reply or "必应" in reply or "Copilot" in reply:
