@@ -50,6 +50,8 @@ class SydneyBot(Bot):
         # self.sydney_chatlayer = ""
 
     def reply(self, query, context: Context = None) -> Reply:
+        self.user_data = conf().get_user_data(context["receiver"])
+        self.user_data["isinprocess"] = False
         if context.type == ContextType.TEXT or context.type == ContextType.IMAGE_CREATE:
             # logger.info("[SYDNEY] query={}".format(query))
             session_id = context["session_id"]
@@ -92,7 +94,7 @@ class SydneyBot(Bot):
             elif query in ("zai","Zai","在？","在","在吗？","在嘛？","在么？","在吗","在嘛","在么","在吗?","在嘛?","在么?"):
                 #done passive reply, if user asks the bot is alive then reply to him the message is in process
                 session.messages.pop()
-                if self.current_responding_task is None:
+                if not context["isinprocess"]:
                     passivereply = Reply(ReplyType.TEXT, "有什么问题吗？\U0001F337")
                 else:
                     passivereply = Reply(ReplyType.TEXT, "请耐心等待，本仙女正在思考问题呢。\U0001F9DA")
@@ -100,7 +102,7 @@ class SydneyBot(Bot):
             if passivereply:
                 return passivereply
             
-            if self.current_responding_task != None and context["stream"]:
+            if context["isinprocess"] and context["stream"]:
                 session.messages.pop()
                 return Reply(ReplyType.INFO, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             try:
@@ -183,12 +185,15 @@ class SydneyBot(Bot):
             logger.info("Conv Closed Successful!")
             # context.get("channel").send(Reply(ReplyType.INFO, "你打断了本仙女的思考! \U0001F643"), context)
             self.current_responding_task = None
+            context["isinprocess"] = False
             return "你打断了本仙女的思考! \U0001F643"
         self.current_responding_task = None
+        context["isinprocess"] = False
         return reply_content
         
 
     async def _chat(self, session, query, context, retry_count= 0):
+        self.user_data["isinprocess"] = True
         if retry_count > 2: 
             #delete the sydney tip message and the previous user message in this situation
             logger.warn("[SYDNEY] failed after maximum number of retry times")
@@ -343,7 +348,7 @@ class SydneyBot(Bot):
                         maxedtime = 8
                         result, pairs = detect_chinese_char_pair(reply, maxedtime)
                         if result and len(pairs) in range(3, 5):
-                            await self.bot.close()
+                            # await self.bot.close()
                             print()
                             logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pairs}")
                             self.bot_statement += "\n\n排比句用太多了，已被掐断。"
@@ -351,7 +356,7 @@ class SydneyBot(Bot):
                             reply = ''.join(reply)
                             return reply
                             raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
-                    if self.bot.chat_hub.apologied and conf().get("stream"):
+                    if self.bot.chat_hub.apologied and context["stream"]:
                         reply = split_sentences(reply, split_punctuation)[:-1]
                         reply = ''.join(reply)
                         self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"
