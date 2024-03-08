@@ -200,6 +200,7 @@ class SydneyBot(Bot):
             return f"(#{query}...)\n抱歉，请换一种方式提问吧!" 
         #get customer settings
         #TODO there will be a conflict in switching the voicespecices when there are users using the different tone at the same time
+        #TODO switch prompt by godcmd 
         sydney_prompt = None
         for customerdic in conf().get("customerSet"):
             for key, customPrompt in customerdic.items():
@@ -297,8 +298,6 @@ class SydneyBot(Bot):
             # logger.info(f"[SYDNEY] query={query}, file_id={file_id}")
             
             async def reedgegpt_chat_stream():
-                #todo reply the current resp_text per 30s in a whole reply process
-                #todo add nosearchall option for different groups or conversations, current ON
                 #TODO for continous chats in a single convid
                 # session_grp = list
                 # if session_id not in session_grp:
@@ -308,7 +307,7 @@ class SydneyBot(Bot):
                 self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
                 logger.info(f"Convid:{self.bot.chat_hub.conversation_id}")
                 wrote = 0
-                split_punctuation =  ['~', '!', '！', '?', '？', '。', '.', ':', '：']
+                split_punctuation =  ['~', '!', '！', '?', '？', '。', '.', '```']
                 consectivereply = ""
                 async for final, response in self.bot.ask_stream(
                         prompt=query,
@@ -317,7 +316,7 @@ class SydneyBot(Bot):
                         locale="zh-TW",
                         webpage_context=preContext,
                         attachment=imgurl,
-                        no_link=False
+                        no_link=True
                 ):
                     if not final:
                         if not wrote:
@@ -338,17 +337,20 @@ class SydneyBot(Bot):
                         #     # raise Exception("Jailbreak failed!")
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
-                        maxedtime = 6
-                        result, pair = detect_chinese_char_pair(reply, maxedtime)
-                        if result:#TODO if cut then cut the incomplete msg part within the whole reply
-                            await self.bot.close()
+                        maxedtime = 5
+                        result, pairs = detect_chinese_char_pair(reply, maxedtime)
+                        if result and len(pairs) > 4:
+                            # await self.bot.close()
                             print()
-                            logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
-                            self.bot_statement += "\n\n排比句用太多了，已被主人掐断。"
-                            reply = split_sentences(reply, split_punctuation)[:-3]
+                            logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pairs}")
+                            self.bot_statement += "\n\n排比句用太多了，已被掐断。"
+                            reply = split_sentences(reply, split_punctuation)[:-maxedtime+1]
+                            reply = ''.join(reply)
                             return reply
                             raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
                     if self.bot.chat_hub.apologied:
+                        # reply = split_sentences(reply, split_punctuation)[:-1]
+                        # reply = ''.join(reply)
                         self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"
                 print()
                 #TODO for continous chat per convid
@@ -359,9 +361,11 @@ class SydneyBot(Bot):
                 return reply
             
 
+
+
+
             bot_chatlayer_reply = await reedgegpt_chat_stream()
             return bot_chatlayer_reply
-
             async def sydneyqtv1chat():
                 '''
                 use the old sydney core with image rocgnition and still copilot, discarded one 
@@ -466,7 +470,7 @@ class SydneyBot(Bot):
                     # fileinfo = ""
                     # webPageinfo = ""
                     return reply
-            
+
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -479,7 +483,7 @@ class SydneyBot(Bot):
                 logger.warn("[SYDNEY] CAPTCHAError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我走丢了，请联系我的主人。(CAPTCHA!)\U0001F300"), context)
                 return 
-            await self.bot.close()
+            # await self.bot.close()
             time.sleep(2)
             #done reply a retrying message
             logger.warn(f"[SYDNEY] do retry, times={retry_count}")
@@ -689,24 +693,39 @@ def cut_botstatement(data, text_to_cut):
     return [{key: re.sub(pattern, "", value) for key, value in item.items()} for item in data]
 
 def detect_chinese_char_pair(context, threshold=5):
-    # create a dictionary to store the frequency of each pair of consecutive chinese characters
-    freq = {}
-    # loop through the context with a sliding window of size 2
-    for i in range(len(context) - 1):
-        # get the current pair of characters
-        pair = context[i:i+3]
-        # check if both characters are chinese characters using the unicode range
-        if '\u4e00' <= pair[0] <= '\u9fff' and '\u4e00' <= pair[1] <= '\u9fff':
-            # increment the frequency of the pair or set it to 1 if not seen before
-            freq[pair] = freq.get(pair, 0) + 1
-    # loop through the frequency dictionary
-    for pair, count in freq.items():
-        # check if the count is greater than or equal to the threshold
-        if count >= threshold:
-            # return True and the pair
-            return True, pair
-    # return False and None if no pair meets the threshold
-    return False, None
+  """
+  Detects pairs of consecutive Chinese characters that reach the threshold frequency.
+
+  Args:
+      context: The text string to analyze.
+      threshold: The minimum frequency for a pair to be considered (default 5).
+
+  Returns:
+      A tuple containing:
+          - True if at least one pair meets the threshold, False otherwise.
+          - A list of pairs exceeding the threshold (empty if none found).
+  """
+
+  # Create a dictionary to store the frequency of each pair.
+  freq = {}
+
+  # Loop through the context with a sliding window of size 2.
+  for i in range(len(context) - 1):
+    pair = context[i:i+2]
+
+    # Check if both characters are Chinese characters.
+    if '\u4e00' <= pair[0] <= '\u9fff' and '\u4e00' <= pair[1] <= '\u9fff':
+      # Increment the frequency of the pair or set it to 1 if not seen before.
+      freq[pair] = freq.get(pair, 0) + 1
+
+  # Find all pairs exceeding the threshold.
+  exceeding_pairs = [pair for pair, count in freq.items() if count >= threshold]
+
+  # Return results based on findings.
+  if exceeding_pairs:
+    return True, exceeding_pairs
+  else:
+    return False, []
 
 def clip_message(text):
     if len(text) <= 10:
