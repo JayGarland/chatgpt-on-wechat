@@ -124,7 +124,7 @@ class SydneyBot(Bot):
                 self.sessions.session_reply(reply_content, session_id) #load into the session messages
 
                 #CRITICAL!!
-                if not conf().get("always_reply_voice") and conf().get("stream"):
+                if not context["voice"] and conf().get("stream"):
                     reply_content = self.bot_statement
 
                 #optional, current not use the suggestion responses
@@ -182,6 +182,7 @@ class SydneyBot(Bot):
             await self.bot.close()
             logger.info("Conv Closed Successful!")
             # context.get("channel").send(Reply(ReplyType.INFO, "你打断了本仙女的思考! \U0001F643"), context)
+            self.current_responding_task = None
             return "你打断了本仙女的思考! \U0001F643"
         self.current_responding_task = None
         return reply_content
@@ -330,7 +331,7 @@ class SydneyBot(Bot):
                             reply += str(response[wrote:]).replace("\n", "")
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
-                            if not conf().get("always_reply_voice") and conf().get("stream"):
+                            if not context["voice"] and conf().get("stream"):
                                 if any(word in consectivereply for word in split_punctuation):
                                     context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                                     consectivereply = ""

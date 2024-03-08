@@ -334,15 +334,17 @@ class Godcmd(Plugin):
                     else:
                         ok, result = False, "当前对话机器人不支持重置会话"
                 elif cmd == "voiceoff":
-                    tts = conf().get("always_reply_voice")
-                    if tts:
-                        tts = conf().__setitem__("always_reply_voice", False)
-                        ok, result = True, "全局语音输出已关闭"
+                    # tts = conf().get("always_reply_voice")
+                    # if tts:
+                    #     tts = conf().__setitem__("always_reply_voice", False)
+                    #     ok, result = True, "全局语音输出已关闭"
+                    user_data = conf().get_user_data(user)
+                    user_data["voice"] = False
+                    ok, result = True, "语音输出已关闭"
                 elif cmd == "voiceon":
-                    tts = conf().get("always_reply_voice")
-                    if not tts:
-                        tts = conf().__setitem__("always_reply_voice", True)
-                        ok, result = True, "全局语音输出已开启"
+                    user_data = conf().get_user_data(user)
+                    user_data["voice"] = True
+                    ok, result = True, "语音输出已开启"
                 elif cmd == "stream":
                     stream = conf().get("stream")
                     if stream:
