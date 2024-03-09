@@ -16,15 +16,15 @@ from plugins import *
     如果命中意图，返回意图对应的回复，否则返回继续交付给下个插件处理
 """
 
-
-@plugins.register(
-    name="BDunit",
-    desire_priority=0,
-    hidden=True,
-    desc="Baidu unit bot system",
-    version="0.1",
-    author="jackson",
-)
+#rajayoux don't need this for sydney
+# @plugins.register(
+#     name="BDunit",
+#     desire_priority=0,
+#     hidden=True,
+#     desc="Baidu unit bot system",
+#     version="0.1",
+#     author="jackson",
+# )
 class BDunit(Plugin):
     def __init__(self):
         super().__init__()
