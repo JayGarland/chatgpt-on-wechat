@@ -220,6 +220,8 @@ class Chatbot:
         """
         Close the connection
         """
+        if not self.chat_hub.aio_session.closed:
+            await self.chat_hub.aio_session.close()
         await self.chat_hub.close()
 
     async def reset(self) -> None:

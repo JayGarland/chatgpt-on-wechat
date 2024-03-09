@@ -32,6 +32,8 @@ class SydneySessionManager(SessionManager):
 
 #TODO add continous talking in a single convsation, now there are 3 chat layers between the backend and front client
 #TODO send stickers in chat
+#TODO Human and bot are operating one account at the same time, and bot will/only check myself words if contain some keywords, then reply
+#TODO inspect voice, stream value like isinprocess through godcmd
 class SydneyBot(Bot):
     def __init__(self) -> None:
         super().__init__()
@@ -161,6 +163,8 @@ class SydneyBot(Bot):
             except Exception as e:
                 logger.error(e)
                 # context.get("channel").send(Reply(ReplyType.TEXT, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}"), context)
+                #add lastquery for per user, independently
+                self.lastquery = None
                 return Reply(ReplyType.INFO, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}")
                 # return Reply(ReplyType.TEXT, reply_content)
             
@@ -182,7 +186,7 @@ class SydneyBot(Bot):
             reply_content = await self.current_responding_task
         except asyncio.CancelledError:
             self.failedmsg = True
-            # await self.bot.close()
+            await self.bot.close()
             logger.info("Conv Closed Successful!")
             # context.get("channel").send(Reply(ReplyType.INFO, "你打断了本仙女的思考! \U0001F643"), context)
             self.current_responding_task = None
@@ -338,10 +342,10 @@ class SydneyBot(Bot):
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
                             if parrellfilter:
-                                maxedtime = 5
+                                maxedtime = 6
                                 result, pairs = detect_chinese_char_pair(reply, maxedtime)
                                 if result and len(pairs) in range(2, 5):
-                                    # await self.bot.close()
+                                    await self.bot.close()
                                     print()
                                     logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pairs}")
                                     self.bot_statement += "\n\n排比句用太多了，已被掐断。"
@@ -493,7 +497,7 @@ class SydneyBot(Bot):
                 logger.warn("[SYDNEY] CAPTCHAError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我走丢了，请联系我的主人。(CAPTCHA!)\U0001F300"), context)
                 return 
-            # await self.bot.close()
+            await self.bot.close()
             time.sleep(2)
             #done reply a retrying message
             logger.warn(f"[SYDNEY] do retry, times={retry_count}")
