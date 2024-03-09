@@ -48,6 +48,12 @@ class ChatChannel(Channel):
         # origin_ctype用于第二步文本回复时，判断是否需要匹配前缀，如果是私聊的语音，就不需要匹配前缀
         if "origin_ctype" not in context:
             context["origin_ctype"] = ctype
+        if "voice" not in context:
+            context["voice"] = False
+        if "stream" not in context:
+            context["stream"] = True
+        if "isinprocess" not in context:
+            context["isinprocess"] = False
         # context首次传入时，receiver是None，根据类型设置receiver
         first_in = "receiver" not in context
         # 群名匹配过程，设置session_id和receiver
@@ -60,9 +66,6 @@ class ChatChannel(Channel):
             context["voice"] = user_data.get("voice")
             context["stream"] = user_data.get("stream")
             context["isinprocess"] = user_data.get("isinprocess")
-            context["voice"] = False
-            context["stream"] = True
-            context["isinprocess"] = False
             if context.get("isgroup", False):
                 group_name = cmsg.other_user_nickname
                 group_id = cmsg.other_user_id
