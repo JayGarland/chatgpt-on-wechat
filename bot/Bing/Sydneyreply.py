@@ -34,6 +34,7 @@ class SydneySessionManager(SessionManager):
 #TODO send stickers in chat
 #TODO Human and bot are operating one account at the same time, and bot will/only check myself words if contain some keywords, then reply
 #TODO inspect voice, stream value like isinprocess through godcmd
+#add query keyword mapping for stream, voice option
 class SydneyBot(Bot):
     def __init__(self) -> None:
         super().__init__()
@@ -104,10 +105,10 @@ class SydneyBot(Bot):
             if passivereply:
                 return passivereply
             
-            if context["isinprocess"] and context["stream"]:
+            if context["isinprocess"]:
                 session.messages.pop()
                 self.lastquery = "" #FIXME or not..
-                return Reply(ReplyType.INFO, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
+                return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             try:
                 # logger.info("[SYDNEY] session query={}, bot_statement hasn't been cut...".format(session.messages))
                 reply_content = asyncio.run(self.handle_async_response(session, query, context))
@@ -132,6 +133,10 @@ class SydneyBot(Bot):
                 if not context["voice"] and context["stream"]:
                     reply_content = self.bot_statement
 
+
+
+                if context["isgroup"] and not context["stream"]:
+                    reply_content += "\n\n" + self.bot_statement
                 #optional, current not use the suggestion responses
                 if self.suggestions != None and self.enablesuggest:
                     reply_content = reply_content + "\n\n----------回复建议------------\n" + self.suggestions
@@ -140,7 +145,10 @@ class SydneyBot(Bot):
                     #do this when not using voice reply
                     try:#testvoiceconflicthere
                         credit = conf().get("sydney_credit")
-                        reply_content += credit
+                        if context["isgroup"]:
+                            reply_content += "\n\n" + credit
+                        else:
+                            reply_content += credit
                         # qrpayimg = open('F:\GitHub\chatgpt-on-wechat\wechatdDonate.jpg', 'rb')
                         #optional add the customize promote info in the end soon
                         qridimg = open('.\wechatID.jpg', 'rb')
@@ -227,8 +235,10 @@ class SydneyBot(Bot):
             self.bot_statement = conf().get("sydney_statement")
             nosearch = False
             self.enablesuggest = True
-            conf().__setitem__("voicespecies", "zh-CN-YunxiaNeural") #zh-CN-XiaoxiaoNeural optional, more matual
+            conf().__setitem__("voicespecies", "zh-CN-XiaoxiaoNeural") #zh-CN-XiaoxiaoNeural optional, more matual
             parrellfilter = False
+        if not context["isgroup"]:
+            self.bot_statement = ""
         preContext = sydney_prompt
 
         try:
