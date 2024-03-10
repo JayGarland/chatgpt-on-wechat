@@ -33,8 +33,6 @@ class SydneySessionManager(SessionManager):
 #TODO add continous talking in a single convsation, now there are 3 chat layers between the backend and front client
 #TODO send stickers in chat
 #TODO Human and bot are operating one account at the same time, and bot will/only check myself words if contain some keywords, then reply
-#TODO inspect voice, stream value like isinprocess through godcmd
-#add query keyword mapping for stream, voice option
 class SydneyBot(Bot):
     def __init__(self) -> None:
         super().__init__()
@@ -101,7 +99,7 @@ class SydneyBot(Bot):
                     passivereply = Reply(ReplyType.TEXT, "有什么问题吗？\U0001F337")
                 else:
                     passivereply = Reply(ReplyType.TEXT, "请耐心等待，本仙女正在思考问题呢。\U0001F9DA")
-            elif query.lower() == "status":
+            elif query.lower() == "outputmode":
                     session.messages.pop()
                     passivereply = Reply(ReplyType.INFO, f"voice: {context['voice']}\nstream: {context['stream']}")
             if passivereply:

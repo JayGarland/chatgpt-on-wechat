@@ -164,6 +164,7 @@ def get_help_text(isadmin, isgroup):
             args = [a for a in info["args"]]
             help_text += f"{' '.join(args)}"
         help_text += f": {info['desc']}\n"
+    help_text += "reset : 重置会话并打断思考\nrevoke : 撤销上一条发送的消息并打断思考\noutputmode : 检查当前的输出模式\n在 : 检查当前的输出状态\n\n"
 
     # 插件指令
     plugins = PluginManager().list_plugins()
