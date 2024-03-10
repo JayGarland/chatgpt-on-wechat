@@ -85,7 +85,7 @@ class SydneyBot(Bot):
                 if len(users_arr) < 1:
                     passivereply = Reply(ReplyType.INFO, "没有可撤回的消息!")
                     return passivereply
-                session.messages = session.messages[:session.messages.index(users_arr[-1])]
+                session.messages = session.messages[:list(session.messages).index(users_arr[-1])]#FIXME, canceled unexpected multiple lines
                 passivereply = Reply(ReplyType.INFO, f"该条消息已撤销!\nThe previous message is cancelled. \n\n({clip_message(users_arr[-1]['[user](#message)'])}...)")
                 if self.current_responding_task is not None:
                     self.current_responding_task.cancel()
@@ -100,7 +100,9 @@ class SydneyBot(Bot):
                 else:
                     passivereply = Reply(ReplyType.TEXT, "请耐心等待，本仙女正在思考问题呢。\U0001F9DA")
             elif query.lower() == "outputmode":
-                    session.messages.pop()
+                    # logger.info(session.messages)
+                    if len(session.messages):
+                        session.messages.pop()
                     passivereply = Reply(ReplyType.INFO, f"voice: {context['voice']}\nstream: {context['stream']}")
             if passivereply:
                 return passivereply
@@ -110,7 +112,7 @@ class SydneyBot(Bot):
                 self.lastquery = "" #FIXME or not..
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             try:
-                # logger.info("[SYDNEY] session query={}, bot_statement hasn't been cut...".format(session.messages))
+                logger.info("[SYDNEY] session query={}".format(session.messages))
                 reply_content = asyncio.run(self.handle_async_response(session, query, context))
                 if reply_content:
                     # logger.info(self.lastquery) 
@@ -163,9 +165,9 @@ class SydneyBot(Bot):
                         return Reply(ReplyType.IMAGE, qridimg)
                 # reply_content = self.process_url(reply_content)
                 if self.apologymsg != "" and self.bot.chat_hub.apologied:
-                    # context.get("channel").send(Reply(ReplyType.TEXT, self.apologymsg), context)#Optional
+                    context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)#Optional
                     self.bot.chat_hub.apologied = False
-                    return Reply(ReplyType.TEXT, reply_content)
+                    return Reply(ReplyType.TEXT, self.apologymsg)
                 return Reply(ReplyType.TEXT, reply_content)
                 
             except Exception as e:
@@ -247,7 +249,7 @@ class SydneyBot(Bot):
             cookies = json.loads(open(file_path, encoding="utf-8").read())
             session_id = context["session_id"]
             session_message = session.messages
-            logger.info(f"[SYDNEY] session={session_message}, session_id={session_id}")
+            # logger.info(f"[SYDNEY] session={session_message}, session_id={session_id}")
 
             # image upload process
             imgurl = None
@@ -312,7 +314,7 @@ class SydneyBot(Bot):
             #     if plugin == None:
             #         session_message.pop(0)
             
-            logger.info(preContext)
+            # logger.info(preContext)
             # logger.info(query)
             # file_id = context.kwargs.get("file_id")
             # if file_id:
@@ -351,10 +353,14 @@ class SydneyBot(Bot):
                             reply += str(response[wrote:]).replace("\n", "")
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
-                            if parrellfilter:
+                            if not context["voice"] and context["stream"]:
+                                if any(word in consectivereply for word in split_punctuation):
+                                    context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                                    consectivereply = ""
+                            if parrellfilter:#improve this filter by detecting if there are how many words different in each sentences
                                 maxedtime = 6
                                 result, pairs = detect_chinese_char_pair(reply, maxedtime)
-                                if result and len(pairs) in range(2, 5):
+                                if result and len(pairs) in range(1, 5):
                                     await self.bot.close()
                                     print()
                                     logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pairs}")
@@ -363,19 +369,19 @@ class SydneyBot(Bot):
                                     reply = ''.join(reply)
                                     return reply
                                     raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
-                            if not context["voice"] and context["stream"]:
-                                if any(word in consectivereply for word in split_punctuation):
-                                    context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
-                                    consectivereply = ""
                         wrote = len(response)
                         # if "Bing" in reply or "必应" in reply or "Copilot" in reply:
                         #     # raise Exception("Jailbreak failed!")
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
-                    if self.bot.chat_hub.apologied and context["stream"]:
-                        reply = split_sentences(reply, split_punctuation)[:-1]
-                        reply = ''.join(reply)
-                        self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"
+                    if self.bot.chat_hub.apologied:
+                        if not context["stream"]:
+                            reply = split_sentences(reply, split_punctuation)[-1:]
+                            reply = ''.join(reply)
+                            if not context["voice"]:
+                                self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"#if nostream and novoice, then add this
+                        else:
+                            context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)
                 print()
                 #TODO for continous chat per convid
                 #if ....
@@ -498,7 +504,7 @@ class SydneyBot(Bot):
         except Exception as e:
             import traceback
             traceback.print_exc()
-            logger.error(e)
+            logger.error(e)#TODO if error happens and the error is conn aborted, then load the generated msg into the session msgs, then retry, and use a question "continue from where you stopped"
             if "throttled" in str(e) or "Throttled" in str(e) or "Authentication" in str(e):
                 logger.warn("[SYDNEY] ConnectionError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我累了，请联系我的主人帮我给新的饼干(Cookies)！\U0001F916"), context)
