@@ -38,7 +38,7 @@ class SydneySessionManager(SessionManager):
 class SydneyBot(Bot):
     def __init__(self) -> None:
         super().__init__()
-        self.sessions = SessionManager(SydneySession, model=conf().get("model") or "gpt-3.5-turbo")
+        self.sessions = SessionManager(SydneySession, model=conf().get("model"))
         self.args = {}
         self.current_responding_task = None
         self.lastquery = None
@@ -69,12 +69,12 @@ class SydneyBot(Bot):
                 self.lastquery = query
                 self.lastsession_id = session_id
             
-            if query == "清除记忆" or query == "清除所有":
+            if query == "reset" or query == "resetall" or query == "清除记忆" or query == "清除所有":
                 #when say this instruction, stop any plugin and clear the session messages
-                if query == "清除记忆":
+                if query == "reset" or query == "清除记忆":
                     self.sessions.clear_session(session_id)
                     passivereply = Reply(ReplyType.INFO, "记忆已清除")
-                elif query == "清除所有":
+                elif query == "resetall" or query == "清除所有":
                     self.sessions.clear_all_session()
                     passivereply = Reply(ReplyType.INFO, "所有人记忆已清除")
                 #done when an async thread is in processing user can stop the process midway      
@@ -101,7 +101,9 @@ class SydneyBot(Bot):
                     passivereply = Reply(ReplyType.TEXT, "有什么问题吗？\U0001F337")
                 else:
                     passivereply = Reply(ReplyType.TEXT, "请耐心等待，本仙女正在思考问题呢。\U0001F9DA")
-            
+            elif query.lower() == "status":
+                    session.messages.pop()
+                    passivereply = Reply(ReplyType.INFO, f"voice: {context['voice']}\nstream: {context['stream']}")
             if passivereply:
                 return passivereply
             
@@ -135,7 +137,7 @@ class SydneyBot(Bot):
 
 
 
-                if context["isgroup"] and not context["stream"]:
+                if context["isgroup"] and not context["stream"] and not context["voice"]:
                     reply_content += "\n\n" + self.bot_statement
                 #optional, current not use the suggestion responses
                 if self.suggestions != None and self.enablesuggest:
@@ -145,7 +147,7 @@ class SydneyBot(Bot):
                     #do this when not using voice reply
                     try:#testvoiceconflicthere
                         credit = conf().get("sydney_credit")
-                        if context["isgroup"]:
+                        if context["isgroup"] or context["voice"]:
                             reply_content += "\n\n" + credit
                         else:
                             reply_content += credit
