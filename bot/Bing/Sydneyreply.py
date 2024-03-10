@@ -219,7 +219,7 @@ class SydneyBot(Bot):
             return f"(#{query}...)\n抱歉，请换一种方式提问吧!" 
         #get customer settings
         #TODO set voicespecices independently for users when there are users using the different tone at the same time
-        #TODO switch persona by godcmd 
+        #TODO switch persona by godcmd, use the query and the query includes id + persona's name, control this in godcmd 
         sydney_prompt = None
         for customerdic in conf().get("customerSet"):
             for key, customPrompt in customerdic.items():

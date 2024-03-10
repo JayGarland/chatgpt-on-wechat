@@ -266,7 +266,7 @@ class Godcmd(Plugin):
                 elif cmd == "help" or cmd == "helpp":
                     if len(args) == 0:
                         ok, result = True, get_help_text(isadmin, isgroup)
-                    else:
+                    else:#todo add persona switch here, add the persona by id + persona name
                         # This can replace the helpp command
                         plugins = PluginManager().list_plugins()
                         query_name = args[0].upper()
