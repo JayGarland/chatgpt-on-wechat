@@ -23,6 +23,7 @@ from PIL import Image
 import pathlib
 from bot.Bing.v1Utils.documentRead import *
 from .re_edge_gpt import Chatbot
+import random
 
 class SydneySessionManager(SessionManager):
     def session_msg_query(self, query, session_id):
@@ -357,7 +358,7 @@ class SydneyBot(Bot):
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
                             if not context["voice"] and context["stream"]:
-                                if any(word in consectivereply for word in split_punctuation):#TODO cut how many sentences randomly, not each one 
+                                if any(word in consectivereply for word in split_punctuation):#TODO cut how many sentences randomly, not every one, 3112024 tried but failed cuz in the generator it always checks when a word generated, so it will be definitely send out a complete sentence and an incomplete sentence, but I want to send sentences individually, like they are units 
                                     context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                                     consectivereply = ""
                             if parrellfilter:#TODO improve this filter by detecting if there are how many words different in each sentences
@@ -378,6 +379,9 @@ class SydneyBot(Bot):
                         #     # raise Exception("Jailbreak failed!")
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
+                    elif consectivereply != "":
+                        context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                        consectivereply = ""
                     if self.bot.chat_hub.apologied:
                         if not context["stream"] and not context["voice"]:
                                 self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"#FIXME
