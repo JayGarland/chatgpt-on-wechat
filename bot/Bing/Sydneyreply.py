@@ -97,7 +97,10 @@ class SydneyBot(Bot):
                 passivereply = Reply(ReplyType.INFO, "配置已更新")
             elif query.lower() in ("zai","Zai","在？","在","在吗？","在嘛？","在么？","在吗","在嘛","在么","在吗?","在嘛?","在么?"):
                 #done passive reply, if user asks the bot is alive then reply to him the message is in process
-                session.messages.pop()
+                try:
+                    session.messages.pop()
+                except IndexError:
+                    pass
                 if not context["isinprocess"]:
                     passivereply = Reply(ReplyType.TEXT, "有什么问题吗？\U0001F337")
                 else:
@@ -359,7 +362,10 @@ class SydneyBot(Bot):
                             consectivereply += str(response[wrote:]).replace("\n", "")
                             if not context["voice"] and context["stream"]:
                                 if any(word in consectivereply for word in split_punctuation):#TODO cut how many sentences randomly, not every one, 3112024 tried but failed cuz in the generator it always checks when a word generated, so it will be definitely send out a complete sentence and an incomplete sentence, but I want to send sentences individually, like they are units 
-                                    context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                                    try:
+                                        context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                                    except ConnectionError:
+                                        pass
                                     consectivereply = ""
                             if parrellfilter:#TODO improve this filter by detecting if there are how many words different in each sentences
                                 maxedtime = 6
@@ -370,8 +376,9 @@ class SydneyBot(Bot):
                                     logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pairs}")
                                     self.bot_statement += "\n\n排比句用太多了，已被掐断。"
                                     if context["stream"]:
-                                        reply = split_sentences(reply, split_punctuation)[:-1]
-                                        reply = ''.join(reply)
+                                        # reply = split_sentences(reply, split_punctuation)[:-1]
+                                        # reply = ''.join(reply)
+                                        context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)
                                     return reply
                                     raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
                         wrote = len(response)
@@ -379,10 +386,10 @@ class SydneyBot(Bot):
                         #     # raise Exception("Jailbreak failed!")
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
-                    elif consectivereply != "":
-                        if not context["voice"] and context["stream"]:
-                            context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
-                            consectivereply = ""
+                    # elif consectivereply != "":#Bug when msg preserved, it will send the same consectivereply again
+                    #     if not context["voice"] and context["stream"]:
+                    #         context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                    #         consectivereply = ""
                     if self.bot.chat_hub.apologied:
                         if not context["stream"] and not context["voice"]:
                                 self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"#FIXME
@@ -398,10 +405,6 @@ class SydneyBot(Bot):
                     # logger.info(f"Sydney_ChatLayer:\n{self.sydney_chatlayer}")
                 return reply
             
-
-
-
-
             bot_chatlayer_reply = await reedgegpt_chat_stream()
             return bot_chatlayer_reply
             async def sydneyqtv1chat():
@@ -513,15 +516,16 @@ class SydneyBot(Bot):
             import traceback
             traceback.print_exc()
             logger.error(e)#TODO if error happens and the error is conn aborted, then load the generated msg into the session msgs, then retry, and use a question "continue from where you stopped"
+            # if "aborted" in str(e) and reply != "":
+            await self.bot.close()
             if "throttled" in str(e) or "Throttled" in str(e) or "Authentication" in str(e):
                 logger.warn("[SYDNEY] ConnectionError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我累了，请联系我的主人帮我给新的饼干(Cookies)！\U0001F916"), context)
                 return 
-            if "CAPTCHA" in str(e):
+            elif "CAPTCHA" in str(e):
                 logger.warn("[SYDNEY] CAPTCHAError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我走丢了，请联系我的主人。(CAPTCHA!)\U0001F300"), context)
                 return 
-            await self.bot.close()
             time.sleep(2)
             #done reply a retrying message
             logger.warn(f"[SYDNEY] do retry, times={retry_count}")
