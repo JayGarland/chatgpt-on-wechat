@@ -67,18 +67,19 @@ class SydneyBot(Bot):
                 self.lastquery = query
                 self.lastsession_id = session_id
             
-            if query == "reset" or query == "resetall" or query == "清除记忆" or query == "清除所有":
+            if query.lower() == "reset" or query.lower() == "resetall" or query == "清除记忆" or query == "清除所有":
                 #when say this instruction, stop any plugin and clear the session messages
-                if query == "reset" or query == "清除记忆":
+                if query.lower() == "reset" or query == "清除记忆":
                     self.sessions.clear_session(session_id)
                     passivereply = Reply(ReplyType.INFO, "记忆已清除")
-                elif query == "resetall" or query == "清除所有":
+                elif query.lower() == "resetall" or query == "清除所有":
                     self.sessions.clear_all_session()
                     passivereply = Reply(ReplyType.INFO, "所有人记忆已清除")
                 #done when an async thread is in processing user can stop the process midway      
                 if self.current_responding_task is not None:
                     self.current_responding_task.cancel()
-            elif query == "撤销" or query == "撤回" or query == "revoke" or query == "Revoke":#done cancel the current process as well
+                    self.user_data["isinprocess"] = False
+            elif query == "撤销" or query == "撤回" or query.lower() == "revoke" or query.lower() == "Revoke":#done cancel the current process as well
                 session.messages.pop()
                 # has_assistant_message = any("[assistant](#message)" in item.keys() for item in session.messages)
                 users_arr = [obj for obj in session.messages if "[user](#message)" in obj.keys()]
@@ -89,10 +90,11 @@ class SydneyBot(Bot):
                 passivereply = Reply(ReplyType.INFO, f"该条消息已撤销!\nThe previous message is cancelled. \n\n({clip_message(users_arr[-1]['[user](#message)'])}...)")
                 if self.current_responding_task is not None:
                     self.current_responding_task.cancel()
+                    self.user_data["isinprocess"] = False
             elif query == "更新配置":
                 load_config()
                 passivereply = Reply(ReplyType.INFO, "配置已更新")
-            elif query in ("zai","Zai","在？","在","在吗？","在嘛？","在么？","在吗","在嘛","在么","在吗?","在嘛?","在么?"):
+            elif query.lower() in ("zai","Zai","在？","在","在吗？","在嘛？","在么？","在吗","在嘛","在么","在吗?","在嘛?","在么?"):
                 #done passive reply, if user asks the bot is alive then reply to him the message is in process
                 session.messages.pop()
                 if not context["isinprocess"]:
@@ -134,6 +136,7 @@ class SydneyBot(Bot):
                 #CRITICAL!!
                 if not context["voice"] and context["stream"]:
                     reply_content = self.bot_statement
+                    
 
 
 
@@ -150,6 +153,8 @@ class SydneyBot(Bot):
                         if context["isgroup"] or context["voice"]:
                             reply_content += "\n\n" + credit
                         else:
+                            if not context["isgroup"]:
+                                reply_content = ""
                             reply_content += credit
                         # qrpayimg = open('F:\GitHub\chatgpt-on-wechat\wechatdDonate.jpg', 'rb')
                         #optional add the customize promote info in the end soon
@@ -331,7 +336,7 @@ class SydneyBot(Bot):
                 self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
                 logger.info(f"Convid:{self.bot.chat_hub.conversation_id}")
                 wrote = 0
-                split_punctuation =  ['~', '!', '！', '?', '？', '。', '.', '```']
+                split_punctuation =  ['~', '!', '！', '?', '？', '。', '.', '```']#TODO apply different split punctuation in different language output
                 consectivereply = ""
                 async for final, response in self.bot.ask_stream(
                         prompt=query,
@@ -381,7 +386,7 @@ class SydneyBot(Bot):
                             if not context["voice"]:
                                 self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"#if nostream and novoice, then add this
                         else:
-                            context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)
+                            context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)#FIXME sometimes this will not do
                 print()
                 #TODO for continous chat per convid
                 #if ....

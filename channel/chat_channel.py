@@ -66,6 +66,8 @@ class ChatChannel(Channel):
                 context["stream"] = True
             if context["voice"] is None:
                 context["voice"] = False
+            if context["isinprocess"] is None:
+                context["isinprocess"] = False
             if context.get("isgroup", False):
                 group_name = cmsg.other_user_nickname
                 group_id = cmsg.other_user_id
