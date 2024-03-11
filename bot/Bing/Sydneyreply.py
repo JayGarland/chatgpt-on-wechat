@@ -139,7 +139,6 @@ class SydneyBot(Bot):
                     
 
 
-
                 if context["isgroup"] and not context["stream"] and not context["voice"]:
                     reply_content += "\n\n" + self.bot_statement
                 #optional, current not use the suggestion responses
@@ -157,7 +156,6 @@ class SydneyBot(Bot):
                                 reply_content = ""
                             reply_content += credit
                         # qrpayimg = open('F:\GitHub\chatgpt-on-wechat\wechatdDonate.jpg', 'rb')
-                        #optional add the customize promote info in the end soon
                         qridimg = open('.\wechatID.jpg', 'rb')
                         context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
                         # context.get("channel").send(Reply(ReplyType.TEXT, credit), context)
@@ -178,7 +176,7 @@ class SydneyBot(Bot):
             except Exception as e:
                 logger.error(e)
                 # context.get("channel").send(Reply(ReplyType.TEXT, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}"), context)
-                #add lastquery for per user, independently
+                #TODO lastquery for per user, independently
                 self.lastquery = None
                 return Reply(ReplyType.INFO, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}")
                 # return Reply(ReplyType.TEXT, reply_content)
@@ -359,10 +357,10 @@ class SydneyBot(Bot):
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
                             if not context["voice"] and context["stream"]:
-                                if any(word in consectivereply for word in split_punctuation):
+                                if any(word in consectivereply for word in split_punctuation):#TODO cut how many sentences randomly, not each one 
                                     context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                                     consectivereply = ""
-                            if parrellfilter:#improve this filter by detecting if there are how many words different in each sentences
+                            if parrellfilter:#TODO improve this filter by detecting if there are how many words different in each sentences
                                 maxedtime = 6
                                 result, pairs = detect_chinese_char_pair(reply, maxedtime)
                                 if result and len(pairs) in range(1, 5):
@@ -370,8 +368,9 @@ class SydneyBot(Bot):
                                     print()
                                     logger.info(f"a pair of consective characters detected over {maxedtime} times. It is {pairs}")
                                     self.bot_statement += "\n\n排比句用太多了，已被掐断。"
-                                    reply = split_sentences(reply, split_punctuation)[:-1]
-                                    reply = ''.join(reply)
+                                    if context["stream"]:
+                                        reply = split_sentences(reply, split_punctuation)[:-1]
+                                        reply = ''.join(reply)
                                     return reply
                                     raise Exception(f"a pair of consective characters detected over {maxedtime} times. It is {pair}")
                         wrote = len(response)
@@ -380,12 +379,11 @@ class SydneyBot(Bot):
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
                     if self.bot.chat_hub.apologied:
-                        if not context["stream"]:
-                            reply = split_sentences(reply, split_punctuation)[-1:]
-                            reply = ''.join(reply)
-                            if not context["voice"]:
-                                self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"#if nostream and novoice, then add this
+                        if not context["stream"] and not context["voice"]:
+                                self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"#FIXME
                         else:
+                            # reply = split_sentences(reply, split_punctuation)[-1:]
+                            # reply = ''.join(reply)
                             context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)#FIXME sometimes this will not do
                 print()
                 #TODO for continous chat per convid
