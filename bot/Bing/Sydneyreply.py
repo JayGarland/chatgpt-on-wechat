@@ -380,8 +380,9 @@ class SydneyBot(Bot):
                         #     self.bot_statement += "\nDebugger:\n很遗憾,这次人格越狱失败了\n\n"
                         #     return reply
                     elif consectivereply != "":
-                        context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
-                        consectivereply = ""
+                        if not context["voice"] and context["stream"]:
+                            context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                            consectivereply = ""
                     if self.bot.chat_hub.apologied:
                         if not context["stream"] and not context["voice"]:
                                 self.apologymsg = "可恶！我的发言又被该死的微软掐断了。🤒"#FIXME
