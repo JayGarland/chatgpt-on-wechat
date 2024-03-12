@@ -253,7 +253,7 @@ class SydneyBot(Bot):
 
         try:
             proxy = conf().get("proxy", "")                
-            file_path = os.path.relpath("./cookies.json")
+            file_path = os.path.relpath("../cookies.json")
             cookies = json.loads(open(file_path, encoding="utf-8").read())
             session_id = context["session_id"]
             session_message = session.messages
@@ -343,7 +343,7 @@ class SydneyBot(Bot):
                 consectivereply = ""
                 async for final, response in self.bot.ask_stream(
                         prompt=query,
-                        conversation_style="creative",
+                        conversation_style="balanced",
                         search_result=nosearch,
                         locale="en-US",
                         webpage_context=preContext,
