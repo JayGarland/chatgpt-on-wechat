@@ -182,6 +182,7 @@ class SydneyBot(Bot):
                 # context.get("channel").send(Reply(ReplyType.TEXT, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}"), context)
                 #TODO lastquery for per user, independently
                 self.lastquery = None
+                self.user_data["isinprocess"] = False
                 return Reply(ReplyType.INFO, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}")
                 # return Reply(ReplyType.TEXT, reply_content)
             
@@ -252,7 +253,7 @@ class SydneyBot(Bot):
 
         try:
             proxy = conf().get("proxy", "")                
-            file_path = os.path.relpath("../cookies.json")
+            file_path = os.path.relpath("./cookies.json")
             cookies = json.loads(open(file_path, encoding="utf-8").read())
             session_id = context["session_id"]
             session_message = session.messages
@@ -344,7 +345,7 @@ class SydneyBot(Bot):
                         prompt=query,
                         conversation_style="creative",
                         search_result=nosearch,
-                        locale="zh-TW",
+                        locale="en-US",
                         webpage_context=preContext,
                         attachment=imgurl,
                         no_link=True
@@ -517,14 +518,19 @@ class SydneyBot(Bot):
             traceback.print_exc()
             logger.error(e)#TODO if error happens and the error is conn aborted, then load the generated msg into the session msgs, then retry, and use a question "continue from where you stopped"
             # if "aborted" in str(e) and reply != "":
-            await self.bot.close()
+            try:
+                await self.bot.close()
+            except:
+                pass
             if "throttled" in str(e) or "Throttled" in str(e) or "Authentication" in str(e):
                 logger.warn("[SYDNEY] ConnectionError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我累了，请联系我的主人帮我给新的饼干(Cookies)！\U0001F916"), context)
+                self.lastquery = None
                 return 
-            elif "CAPTCHA" in str(e):
+            if "CAPTCHA" in str(e):
                 logger.warn("[SYDNEY] CAPTCHAError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我走丢了，请联系我的主人。(CAPTCHA!)\U0001F300"), context)
+                self.lastquery = None
                 return 
             time.sleep(2)
             #done reply a retrying message
