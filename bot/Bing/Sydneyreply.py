@@ -40,7 +40,7 @@ class SydneyBot(Bot):
         self.sessions = SessionManager(SydneySession, model=conf().get("model"))
         self.args = {}
         self.current_responding_task = None
-        self.lastquery = None
+        # self.lastquery = None #FIXME removed tip msg func when repeat the same question
         self.failedmsg = False
         self.enablesuggest = None
         self.suggestions = None
@@ -61,12 +61,12 @@ class SydneyBot(Bot):
 
             passivereply = None
             #avoid responding the same question
-            if query == self.lastquery and session_id == self.lastsession_id:
-                session.messages.pop()
-                passivereply = Reply(ReplyType.INFO, f"请耐心等待，本仙女早就看到你的消息啦!\n请不要重复提问哦!\U0001F9DA \n\n重复的提问:{clip_message(self.lastquery)}...")
-            else:
-                self.lastquery = query
-                self.lastsession_id = session_id
+            # if query == self.lastquery and session_id == self.lastsession_id:
+            #     session.messages.pop()
+            #     passivereply = Reply(ReplyType.INFO, f"请耐心等待，本仙女早就看到你的消息啦!\n请不要重复提问哦!\U0001F9DA \n\n重复的提问:{clip_message(self.lastquery)}...")
+            # else:
+            #     self.lastquery = query
+            #     self.lastsession_id = session_id
             
             if query.lower() == "reset" or query.lower() == "resetall" or query == "清除记忆" or query == "清除所有":
                 #when say this instruction, stop any plugin and clear the session messages
@@ -115,7 +115,7 @@ class SydneyBot(Bot):
             
             if context["isinprocess"]:
                 session.messages.pop()
-                self.lastquery = "" #FIXME or not..
+                # self.lastquery = "" #FIXME or not..
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             try:
                 logger.info("[SYDNEY] session query={}".format(session.messages))
@@ -126,11 +126,11 @@ class SydneyBot(Bot):
                         # logger.info(self.lastquery)
                         self.failedmsg = False
                         #match the lastquery
-                        curtusers_arr = [obj for obj in session.messages if "[user](#message)" in obj.keys()]
-                        if len(curtusers_arr) > 1:
-                            second_last_usermsg = curtusers_arr[-1]
-                            self.lastquery = list(second_last_usermsg.values())[-1]
-                            # logger.info(self.lastquery)
+                        # curtusers_arr = [obj for obj in session.messages if "[user](#message)" in obj.keys()]
+                        # if len(curtusers_arr) > 1:
+                        #     second_last_usermsg = curtusers_arr[-1]
+                        #     self.lastquery = list(second_last_usermsg.values())[-1]
+                        #     # logger.info(self.lastquery)
                         return Reply(ReplyType.INFO, reply_content)
                 else:
                     return Reply(ReplyType.TEXT, reply_content)
@@ -140,25 +140,20 @@ class SydneyBot(Bot):
                 #CRITICAL!!
                 if not context["voice"] and context["stream"]:
                     reply_content = self.bot_statement
-                    
-
 
                 if context["isgroup"] and not context["stream"] and not context["voice"]:
                     reply_content += "\n\n" + self.bot_statement
+                
                 #optional, current not use the suggestion responses
                 if self.suggestions != None and self.enablesuggest:
                     reply_content = reply_content + "\n\n----------回复建议------------\n" + self.suggestions
                 if len(session.messages) == 2: #FIXME optional, this is for promoting 
                     #done, locate the first time message and send promote info
                     #do this when not using voice reply
-                    try:#testvoiceconflicthere
+                    try:#TODO testvoiceconflicthere
+                        #when stream, no need add whitespaces
                         credit = conf().get("sydney_credit")
-                        if context["isgroup"] or context["voice"]:
-                            reply_content += "\n\n" + credit
-                        else:
-                            if not context["isgroup"]:
-                                reply_content = ""
-                            reply_content += credit
+                        reply_content += "\n\n" + credit 
                         # qrpayimg = open('F:\GitHub\chatgpt-on-wechat\wechatdDonate.jpg', 'rb')
                         qridimg = open('.\wechatID.jpg', 'rb')
                         context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
@@ -181,7 +176,7 @@ class SydneyBot(Bot):
                 logger.error(e)
                 # context.get("channel").send(Reply(ReplyType.TEXT, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}"), context)
                 #TODO lastquery for per user, independently
-                self.lastquery = None
+                # self.lastquery = None
                 self.user_data["isinprocess"] = False
                 return Reply(ReplyType.INFO, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}")
                 # return Reply(ReplyType.TEXT, reply_content)
@@ -322,7 +317,7 @@ class SydneyBot(Bot):
             #     if plugin == None:
             #         session_message.pop(0)
             
-            # logger.info(preContext)
+            logger.info(preContext)
             # logger.info(query)
             # file_id = context.kwargs.get("file_id")
             # if file_id:
@@ -336,19 +331,19 @@ class SydneyBot(Bot):
                 #     self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
                 #     session_grp += list(session_id)
                 reply = ""
-                self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
+                self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="Sydney")
                 logger.info(f"Convid:{self.bot.chat_hub.conversation_id}")
                 wrote = 0
-                split_punctuation =  ['~', '!', '！', '?', '？', '。', '.', '```']#TODO apply different split punctuation in different language output
+                split_punctuation =  ['~', '!', '！', '?', '？', '。', '```']#TODO apply different split punctuation in different language output
                 consectivereply = ""
                 async for final, response in self.bot.ask_stream(
                         prompt=query,
-                        conversation_style="balanced",
+                        conversation_style="precise",
                         search_result=nosearch,
-                        locale="en-US",
+                        locale="zh-TW",
                         webpage_context=preContext,
                         attachment=imgurl,
-                        no_link=True
+                        no_link=False
                 ):
                     if not final:
                         if not wrote:
@@ -358,18 +353,18 @@ class SydneyBot(Bot):
                         else:
                             # print(response)
                             print(response[wrote:], end="", flush=True)
-                            reply += str(response[wrote:]).replace("\n", "")
+                            reply += str(response[wrote:])
                             # logger.info(reply)
                             consectivereply += str(response[wrote:]).replace("\n", "")
                             if not context["voice"] and context["stream"]:
                                 if any(word in consectivereply for word in split_punctuation):#TODO cut how many sentences randomly, not every one, 3112024 tried but failed cuz in the generator it always checks when a word generated, so it will be definitely send out a complete sentence and an incomplete sentence, but I want to send sentences individually, like they are units 
                                     try:
                                         context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
-                                    except ConnectionError:
-                                        pass
+                                    except:
+                                        context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                                     consectivereply = ""
                             if parrellfilter:#TODO improve this filter by detecting if there are how many words different in each sentences
-                                maxedtime = 6
+                                maxedtime = 7
                                 result, pairs = detect_chinese_char_pair(reply, maxedtime)
                                 if result and len(pairs) in range(1, 5):
                                     await self.bot.close()
@@ -397,7 +392,14 @@ class SydneyBot(Bot):
                         else:
                             # reply = split_sentences(reply, split_punctuation)[-1:]
                             # reply = ''.join(reply)
-                            context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)#FIXME sometimes this will not do
+                            try:
+                                context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)#FIXME sometimes this will not do
+                            except:
+                                context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)
+                if consectivereply != "":#Bug when msg preserved, it will send the same consectivereply again
+                    if not context["voice"] and context["stream"]:
+                        context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
+                        consectivereply = ""
                 print()
                 #TODO for continous chat per convid
                 #if ....
@@ -525,12 +527,14 @@ class SydneyBot(Bot):
             if "throttled" in str(e) or "Throttled" in str(e) or "Authentication" in str(e):
                 logger.warn("[SYDNEY] ConnectionError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我累了，请联系我的主人帮我给新的饼干(Cookies)！\U0001F916"), context)
-                self.lastquery = None
+                # self.lastquery = None
+                session.messages.pop()
                 return 
             if "CAPTCHA" in str(e):
                 logger.warn("[SYDNEY] CAPTCHAError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我走丢了，请联系我的主人。(CAPTCHA!)\U0001F300"), context)
-                self.lastquery = None
+                session.messages.pop()
+                # self.lastquery = None
                 return 
             time.sleep(2)
             #done reply a retrying message
