@@ -153,7 +153,10 @@ class SydneyBot(Bot):
                     try:#TODO testvoiceconflicthere
                         #when stream, no need add whitespaces
                         credit = conf().get("sydney_credit")
-                        reply_content += "\n\n" + credit 
+                        if not context["isgroup"] and context["stream"]:
+                            reply_content += credit
+                        else: 
+                            reply_content += "\n\n" + credit 
                         # qrpayimg = open('F:\GitHub\chatgpt-on-wechat\wechatdDonate.jpg', 'rb')
                         qridimg = open('.\wechatID.jpg', 'rb')
                         context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
