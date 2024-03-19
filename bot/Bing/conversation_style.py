@@ -9,7 +9,24 @@ from typing import Optional
 
 class ConversationStyle(Enum):
     creative = [
-        "fluxsydney",
+        "fluxcopilot",
+        "nojbf",
+        "iyxapbing",
+        "iycapbing",
+        "dgencontentv3",
+        "nointernalsugg",
+        "disable_telemetry",
+        "machine_affinity",
+        "streamf",
+        "codeint",
+        "langdtwb",
+        "fdwtlst",
+        "fluxprod",
+        "eredirecturl",
+        "deuct3"
+    ]
+    balanced = [
+        "fluxcopilot",
         "nojbf",
         "iyxapbing",
         "iycapbing",
@@ -24,35 +41,12 @@ class ConversationStyle(Enum):
         "fluxprod",
         "eredirecturl",
         "deuct3",
-        # "nosearchall"
-    ]
-    balanced = [
-        "fluxsydney",
-		"nojbf", # no jailbreak filter
-		"iyxapbing",
-		"iycapbing",
-		"dgencontentv3",
-		"nointernalsugg",
-		"disable_telemetry",
-		"machine_affinity",
-		"streamf",
-		"langdtwb",
-		"fdwtlst",
-		"fluxprod",
-		"eredirecturl",
-		"gptvnodesc",  # may related to image search
-		"gptvnoex",    # may related to image search
-		"codeintfile", # code interpreter + file uploader
-		"sdretrieval", # retrieve upload file
-		"gamaxinvoc",  # file reader invocation
-		"ldsummary",   # our guess: long document summary
-		"ldqa",        # our guess: long document quality assurance
+        # Balance
         "galileo",
-        "gldcl1p",
-        "gpt4tmncnp",
+        "gldcl1p"
     ]
     precise = [
-        "fluxsydney",
+        "fluxcopilot",
         "nojbf",
         "iyxapbing",
         "iycapbing",
@@ -68,8 +62,7 @@ class ConversationStyle(Enum):
         "eredirecturl",
         "deuct3",
         # Precise
-        "h3precise",
-        "gpt4tmncnp",
+        "h3precise"
     ]
 
 
