@@ -68,7 +68,10 @@ class Chatbot:
         self = Chatbot.__new__(Chatbot)
         self.proxy = proxy
         self.mode = mode
-        conversation = await Conversation.create(self.proxy, cookies=cookies, mode=mode)
+        try:
+            conversation = await Conversation.create(self.proxy, cookies=cookies, mode=mode)
+        except Exception as e:
+            raise e
         if plugin_ids is not None:
             new_plugin_list = [PLUGINS.get(plugin, plugin) for plugin in plugin_ids]
             await self.add_plugins(cookies, mode, conversation.struct["conversationId"], new_plugin_list)
