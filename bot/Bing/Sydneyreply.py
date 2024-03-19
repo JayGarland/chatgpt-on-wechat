@@ -341,12 +341,12 @@ class SydneyBot(Bot):
                 consectivereply = ""
                 async for final, response in self.bot.ask_stream(
                         prompt=query,
-                        conversation_style="precise",
+                        conversation_style="creative",
                         search_result=nosearch,
-                        locale="zh-TW",
+                        locale="en-US",
                         webpage_context=preContext,
                         attachment=imgurl,
-                        no_link=False
+                        no_link=True
                 ):
                     if not final:
                         if not wrote:
@@ -358,10 +358,10 @@ class SydneyBot(Bot):
                             print(response[wrote:], end="", flush=True)
                             reply += str(response[wrote:])
                             # logger.info(reply)
-                            consectivereply += str(response[wrote:]).replace("\n", "")
+                            consectivereply += str(response[wrote:]).replace("\n", "").replace("*","")
                             if not context["voice"] and context["stream"]:
-                                if any(word in consectivereply for word in split_punctuation):#TODO cut how many sentences randomly, not every one, 3112024 tried but failed cuz in the generator it always checks when a word generated, so it will be definitely send out a complete sentence and an incomplete sentence, but I want to send sentences individually, like they are units 
-                                    try:
+                                if any(word in consectivereply for word in split_punctuation):#TODO cut how many sentences randomly, I want to send sentences individually
+                                    try:#TODO add emoji as split mark
                                         context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                                     except:
                                         context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
@@ -395,11 +395,13 @@ class SydneyBot(Bot):
                         else:
                             # reply = split_sentences(reply, split_punctuation)[-1:]
                             # reply = ''.join(reply)
-                            try:
-                                context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)#FIXME sometimes this will not do
-                            except:
-                                context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)
-                if consectivereply != "":#Bug when msg preserved, it will send the same consectivereply again
+                            lastreply = split_sentences(reply, split_punctuation)[-1:]
+                            if len(lastreply) > 2:
+                                try:
+                                    context.get("channel").send(Reply(ReplyType.TEXT, ''.join(lastreply)), context)#FIXME sometimes this will not do
+                                except:
+                                    context.get("channel").send(Reply(ReplyType.TEXT, ''.join(lastreply)), context)
+                if len(consectivereply) >= 2: #":#Bug when msg preserved, it will send the same consectivereply again
                     if not context["voice"] and context["stream"]:
                         context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                         consectivereply = ""
