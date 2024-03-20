@@ -15,6 +15,10 @@ from config import conf
 from bot.baidu.baidu_wenxin_session import BaiduWenxinSession
 from bot.gemini.llm import model, img_model
 from bot.gemini.utils import *
+from PIL import Image
+from common import memory
+import io
+
 
 
 # OpenAI对话模型API (可用)
@@ -24,7 +28,7 @@ class GoogleGeminiBot(Bot):
         # 复用文心的token计算方式
         self.sessions = SessionManager(BaiduWenxinSession, model=conf().get("model"))
 
-    def reply(self, query, context: Context = None) -> Reply:
+    def reply(self, query: str, context: Context = None) -> Reply:
         try:
             if context.type != ContextType.TEXT:
                 logger.warn(f"[Gemini] Unsupported message type, type={context.type}")
@@ -55,14 +59,25 @@ class GoogleGeminiBot(Bot):
             if reply:
                 return reply
             session = self.sessions.session_query(query, session_id)
-            gemini_messages = self.construct_preset(context) + self._convert_to_gemini_messages(self._filter_messages(session.messages))
+            preset = self.construct_preset(context)
+            gemini_messages = preset + self._convert_to_gemini_messages(self._filter_messages(session.messages))
             logger.info(gemini_messages)
-            response = model.generate_content(gemini_messages)
+            # image process
+            img_cache = memory.USER_IMAGE_CACHE.get(session_id)
+            if img_cache:
+                img = self.process_img(session_id, img_cache)
+                # logger.info(img)
+                response = img_model.generate_content([query, img]) #when use the vision no persona
+            else:
+                response = trygen(model, gemini_messages)
+            # logger.debug(response)
             reply_text = response.text
             self.sessions.session_reply(reply_text, session_id)
             logger.info(f"[Gemini] reply={reply_text}")
+            if context["isgroup"] and not context["stream"] and not context["voice"]:
+                reply_text += "\n\n" + self.bot_statement
             if len(session.messages) == 3:
-                return wrap_promo_msg(context, reply_text)
+                return self.wrap_promo_msg(context, reply_text)
             return Reply(ReplyType.TEXT, reply_text)
         except Exception as e:
             import traceback
@@ -111,7 +126,7 @@ class GoogleGeminiBot(Bot):
                 "role": "model",
                 "parts": [{"text": pre_reply}]
             })
-        logger.info(res)
+        # logger.info(res)
         return res
     
     def init_prompt_botstatement(self, context):
@@ -134,3 +149,32 @@ class GoogleGeminiBot(Bot):
         if not context["isgroup"]:
             self.bot_statement = ""
         return persona, pre_reply
+    
+    def wrap_promo_msg(self, context, reply_text):
+        credit = conf().get("sydney_credit")
+        if not context["isgroup"] and context["stream"]:
+            reply_text += credit
+        else: 
+            reply_text += "\n\n" + credit
+        qridimg = open('.\wechatID.jpg', 'rb')
+        try:
+            context.get("channel").send(Reply(ReplyType.TEXT, reply_text), context)
+            return Reply(ReplyType.IMAGE, qridimg)
+        except Exception as e:
+            logger.warning(e)
+            context.get("channel").send(Reply(ReplyType.TEXT, reply_text), context)
+            return Reply(ReplyType.IMAGE, qridimg)
+    
+    def process_img(self, session_id, img_cache):
+        try:
+            msg = img_cache.get("msg")
+            path = img_cache.get("path")
+            msg.prepare()
+            logger.info(f"[SYDNEY] query with images, path={path}")
+            with open(path, "rb") as f:
+                img_bytes = f.read()
+            img = Image.open(io.BytesIO(img_bytes))
+            memory.USER_IMAGE_CACHE[session_id] = None
+            return img
+        except Exception as e:
+            logger.exception(e)
