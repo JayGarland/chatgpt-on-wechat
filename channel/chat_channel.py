@@ -63,7 +63,7 @@ class ChatChannel(Channel):
             context["stream"] = user_data.get("stream")
             context["isinprocess"] = user_data.get("isinprocess")
             if context["stream"] is None:
-                context["stream"] = True
+                context["stream"] = False
             if context["voice"] is None:
                 context["voice"] = False
             if context["isinprocess"] is None:
