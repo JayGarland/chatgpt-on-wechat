@@ -67,20 +67,24 @@ COMMANDS = {
     },
     "voiceoff":{
         "alias": ["voiceoff"],
-        "desc": "toggleVoiceoutput",
+        "desc": "toggleVoiceoff",
     },
     "voiceon":{
         "alias": ["voiceon"],
-        "desc": "toggleVoiceoutput",
+        "desc": "toggleVoiceon",
     },
     "streamon":{
         "alias": ["streamon"],
-        "desc": "togglestreamoutput"
+        "desc": "togglestreamtoon"
     },
     "streamoff":{
         "alias": ["streamoff"],
-        "desc": "togglestreamoutput"
+        "desc": "togglestreamtooff"
     },
+    "outputmode":{
+        "alias": ["outputmode"],
+        "desc": "checkoutputmode"
+    }
 }
 
 ADMIN_COMMANDS = {
@@ -211,7 +215,7 @@ class Godcmd(Plugin):
             logger.info("[Godcmd] 因未设置口令，本次的临时口令为%s。" % self.temp_password)
         else:
             self.temp_password = None
-        custom_commands = conf().get("clear_memory_commands", [])
+        custom_commands = conf().get("clear_memory_commands", ["#清除记忆"])
         for custom_command in custom_commands:
             if custom_command and custom_command.startswith("#"):
                 custom_command = custom_command[1:]
@@ -356,6 +360,9 @@ class Godcmd(Plugin):
                     user_data["stream"] = True
                     user_data["voice"] = False
                     ok, result = True, f"OK!"
+                elif cmd == "outputmode":
+                    user_data = conf().get_user_data(user)
+                    ok, result = True, f"voice: {e_context['context']['voice']}\nstream: {e_context['context']['stream']}"
                 logger.debug("[Godcmd] command: %s by %s" % (cmd, user))
             elif any(cmd in info["alias"] for info in ADMIN_COMMANDS.values()):
                 if isadmin:
