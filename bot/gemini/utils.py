@@ -1,6 +1,9 @@
 from common.log import logger
-from config import conf
-from bridge.reply import Reply, ReplyType
+from bot.gemini.llm import genai
+import time
+import traceback
+
+
 def clip_message(text):
     if len(text) <= 10:
         return text
@@ -16,17 +19,12 @@ def is_chinese(text):
             return True
     return False
 
-def wrap_promo_msg(context, reply_text):
-    credit = conf().get("sydney_credit")
-    if not context["isgroup"] and context["stream"]:
-        reply_text += credit
-    else: 
-        reply_text += "\n\n" + credit
-    qridimg = open('.\wechatID.jpg', 'rb')
-    try:
-        context.get("channel").send(Reply(ReplyType.TEXT, reply_text), context)
-        return Reply(ReplyType.IMAGE, qridimg)
-    except Exception as e:
-        logger.warning(e)
-        context.get("channel").send(Reply(ReplyType.TEXT, reply_text), context)
-        return Reply(ReplyType.IMAGE, qridimg)
+def trygen(model: genai.GenerativeModel, gemini_messages: list, max_retries = 1, delay = 1):
+    for i in range(max_retries):
+        try:
+            return model.generate_content(gemini_messages)
+        except Exception as e:
+            traceback.print_exc()
+            logger.error(f"Exception occurred: {e}. Retrying...")
+            time.sleep(delay)
+    # raise Exception(f"Try generate content failed after {max_retries} retries.")
