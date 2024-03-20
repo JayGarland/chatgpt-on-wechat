@@ -169,7 +169,8 @@ available_setting = {
     "nosearch": True,
     "enablesuggest": False,
     "voicespecies": "",
-    "stream": True
+    "stream": True,
+    "pre_reply": ""
 }
 
 
