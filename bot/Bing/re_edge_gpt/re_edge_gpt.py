@@ -3,12 +3,12 @@ Main.py
 """
 from __future__ import annotations
 
-from .chathub import *
-from .constants import APP_ID, PLUGINS
-from .conversation import *
-from .request import *
-from .utils.exception.exception_message import add_plugin_failed_message
-from .utils.exception.exceptions import LimitExceeded, PluginError
+from bot.Bing.re_edge_gpt.chathub import *
+from bot.Bing.re_edge_gpt.constants import APP_ID, PLUGINS
+from bot.Bing.re_edge_gpt.conversation import *
+from bot.Bing.re_edge_gpt.request import *
+from bot.Bing.utils.exception.exception_message import add_plugin_failed_message
+from bot.Bing.utils.exception.exceptions import LimitExceeded, PluginError
 
 
 class Chatbot:

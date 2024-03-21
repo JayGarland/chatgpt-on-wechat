@@ -4,8 +4,8 @@ import random
 import sys
 from typing import Union
 
-from ..constants import DELIMITER
-from ..locale import LocationHint
+from bot.Bing.re_edge_gpt.constants import DELIMITER
+from bot.Bing.re_edge_gpt.locale import LocationHint
 
 
 def append_identifier(msg: dict) -> str:

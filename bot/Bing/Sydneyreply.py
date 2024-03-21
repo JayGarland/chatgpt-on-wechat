@@ -21,15 +21,9 @@ import base64
 from bot.session_manager import SessionManager
 from PIL import Image
 import pathlib
-from bot.Bing.v1Utils.documentRead import *
-from .re_edge_gpt import Chatbot
-import random
-
-class SydneySessionManager(SessionManager):
-    def session_msg_query(self, query, session_id):
-        session = self.build_session(session_id)
-        messages = session.messages + {"content": query}
-        return messages
+from .v1Utils.documentRead import *
+from .re_edge_gpt.re_edge_gpt import Chatbot
+from .utils.sydneyreplyutils import *
 
 #TODO add continous talking in a single convsation, now there are 3 chat layers between the backend and front client
 #TODO send stickers in chat
@@ -38,18 +32,20 @@ class SydneyBot(Bot):
     def __init__(self) -> None:
         super().__init__()
         self.sessions = SessionManager(SydneySession, model=conf().get("model"))
-        self.args = {}
-        self.current_responding_task = None
-        # self.lastquery = None #FIXME removed tip msg func when repeat the same question
-        self.failedmsg = False
-        self.enablesuggest = None
-        self.suggestions = None
-        self.lastsession_id = None
+        
+        #bot
         self.bot = Chatbot
-        self.apologymsg = ""
-        self.bot_statement = ""
-        #TODO for continous chat per convid
-        # self.sydney_chatlayer = ""
+        self.current_responding_task = None #FIXME optional, all the variable can be removed as you can set "concurrency_in_session" in config
+        self.failedmsg = False # this is used for when user interrupt reply process
+        self.enablesuggest = False #enable suggest within the reply 
+        self.suggestions = str("")
+        self.apologymsg = str("") #show apologymsg it is used on v1
+        self.bot_statement = str("") #show botstatement
+        
+        #avoid_repeat
+        self.avoid_repeat = True #toggle
+        self.lastsession_id = None #helper for repeat the same question
+        self.lastquery = str("") #FIXME optional, now disabled the tip msg func when repeat the same question
 
     def reply(self, query, context: Context = None) -> Reply:
         self.user_data = conf().get_user_data(context["receiver"])
@@ -60,16 +56,16 @@ class SydneyBot(Bot):
             session = self.sessions.session_query(query, session_id)
 
             passivereply = None
-            #avoid responding the same question
-            # if query == self.lastquery and session_id == self.lastsession_id:
-            #     session.messages.pop()
-            #     passivereply = Reply(ReplyType.INFO, f"请耐心等待，本仙女早就看到你的消息啦!\n请不要重复提问哦!\U0001F9DA \n\n重复的提问:{clip_message(self.lastquery)}...")
-            # else:
-            #     self.lastquery = query
-            #     self.lastsession_id = session_id
+            if self.avoid_repeat:
+                if query == self.lastquery and session_id == self.lastsession_id:#avoid responding the same question
+                    session.messages.pop()
+                    passivereply = Reply(ReplyType.INFO, f"请耐心等待，本仙女早就看到你的消息啦!\n请不要重复提问哦!\U0001F9DA \n\n重复的提问:{clip_message(self.lastquery)}...")
+                else:
+                    self.lastquery = query
+                    self.lastsession_id = session_id
             
             if query.lower() == "reset" or query.lower() == "resetall" or query == "清除记忆" or query == "清除所有":
-                #when say this instruction, stop any plugin and clear the session messages
+                #when execute, this closes any plugin and clears the session messages
                 if query.lower() == "reset" or query == "清除记忆":
                     self.sessions.clear_session(session_id)
                     passivereply = Reply(ReplyType.INFO, "记忆已清除")
@@ -80,14 +76,15 @@ class SydneyBot(Bot):
                 if self.current_responding_task is not None:
                     self.current_responding_task.cancel()
                     self.user_data["isinprocess"] = False
-            elif query == "撤销" or query == "撤回" or query.lower() == "revoke" or query.lower() == "Revoke":#done cancel the current process as well
+            elif query == "撤销" or query == "撤回" or query.lower() == "revoke" or query.lower() == "Revoke":
+                #cancel the reply process and revoke the last conversation
                 session.messages.pop()
                 # has_assistant_message = any("[assistant](#message)" in item.keys() for item in session.messages)
                 users_arr = [obj for obj in session.messages if "[user](#message)" in obj.keys()]
                 if len(users_arr) < 1:
                     passivereply = Reply(ReplyType.INFO, "没有可撤回的消息!")
                     return passivereply
-                session.messages = session.messages[:list(session.messages).index(users_arr[-1])]#FIXME, canceled unexpected multiple lines
+                session.messages = session.messages[:list(session.messages).index(users_arr[-1])]#FIXME, revoked unexpected multiple conversations
                 passivereply = Reply(ReplyType.INFO, f"该条消息已撤销!\nThe previous message is cancelled. \n\n({clip_message(users_arr[-1]['[user](#message)'])}...)")
                 if self.current_responding_task is not None:
                     self.current_responding_task.cancel()
@@ -96,7 +93,7 @@ class SydneyBot(Bot):
                 load_config()
                 passivereply = Reply(ReplyType.INFO, "配置已更新")
             elif query.lower() in ("zai","Zai","在？","在","在吗？","在嘛？","在么？","在吗","在嘛","在么","在吗?","在嘛?","在么?"):
-                #done passive reply, if user asks the bot is alive then reply to him the message is in process
+                #passiva reply if the bot is alive and also reply if reply is in process
                 try:
                     session.messages.pop()
                 except IndexError:
@@ -105,37 +102,31 @@ class SydneyBot(Bot):
                     passivereply = Reply(ReplyType.TEXT, "有什么问题吗？\U0001F337")
                 else:
                     passivereply = Reply(ReplyType.TEXT, "请耐心等待，本仙女正在思考问题呢。\U0001F9DA")
-            elif query.lower() == "outputmode":
-                    # logger.info(session.messages)
-                    if len(session.messages):
-                        session.messages.pop()
-                    passivereply = Reply(ReplyType.INFO, f"voice: {context['voice']}\nstream: {context['stream']}")
             if passivereply:
                 return passivereply
             
             if context["isinprocess"]:
                 session.messages.pop()
-                # self.lastquery = "" #FIXME or not..
+                self.lastquery = "" #FIXME or not..
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
+            
             try:
                 logger.info("[SYDNEY] session query={}".format(session.messages))
                 reply_content = asyncio.run(self.handle_async_response(session, query, context))
-                if reply_content:
-                    # logger.info(self.lastquery) 
+                if reply_content: 
                     if self.failedmsg:
-                        # logger.info(self.lastquery)
                         self.failedmsg = False
                         #match the lastquery
-                        # curtusers_arr = [obj for obj in session.messages if "[user](#message)" in obj.keys()]
-                        # if len(curtusers_arr) > 1:
-                        #     second_last_usermsg = curtusers_arr[-1]
-                        #     self.lastquery = list(second_last_usermsg.values())[-1]
-                        #     # logger.info(self.lastquery)
+                        curtusers_arr = [obj for obj in session.messages if "[user](#message)" in obj.keys()]
+                        if len(curtusers_arr) > 1:
+                            second_last_usermsg = curtusers_arr[-1]
+                            self.lastquery = list(second_last_usermsg.values())[-1]
                         return Reply(ReplyType.INFO, reply_content)
-                else:
-                    return Reply(ReplyType.TEXT, reply_content)
-                #when no exception
-                self.sessions.session_reply(reply_content, session_id) #load into the session messages
+                # else:
+                #     return Reply(ReplyType.TEXT, reply_content)
+                
+                #load bot reply to the session messages
+                self.sessions.session_reply(reply_content, session_id)
 
                 #CRITICAL!!
                 if not context["voice"] and context["stream"]:
@@ -144,13 +135,13 @@ class SydneyBot(Bot):
                 if context["isgroup"] and not context["stream"] and not context["voice"]:
                     reply_content += "\n\n" + self.bot_statement
                 
-                #optional, current not use the suggestion responses
-                if self.suggestions != None and self.enablesuggest:
+                #Optional, add suggest inside the reply
+                if self.suggestions != "" and self.enablesuggest:
                     reply_content = reply_content + "\n\n----------回复建议------------\n" + self.suggestions
-                if len(session.messages) == 2: #FIXME optional, this is for promoting 
-                    #done, locate the first time message and send promote info
-                    #do this when not using voice reply
-                    try:#TODO testvoiceconflicthere
+                
+                if len(session.messages) == 2: #Optional, this is for promoting 
+                    #when in voiceon mode, the voice output will be disabled at this time
+                    try:
                         #when stream, no need add whitespaces
                         credit = conf().get("sydney_credit")
                         if not context["isgroup"] and context["stream"]:
@@ -160,29 +151,25 @@ class SydneyBot(Bot):
                         # qrpayimg = open('F:\GitHub\chatgpt-on-wechat\wechatdDonate.jpg', 'rb')
                         qridimg = open('.\wechatID.jpg', 'rb')
                         context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
-                        # context.get("channel").send(Reply(ReplyType.TEXT, credit), context)
-                        # context.get("channel").send(Reply(ReplyType.IMAGE, qrpayimg), context)
                         return Reply(ReplyType.IMAGE, qridimg)
                     except Exception:
                         context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
-                        # context.get("channel").send(Reply(ReplyType.TEXT, credit), context)
-                        # context.get("channel").send(Reply(ReplyType.IMAGE, qrpayimg), context)
                         return Reply(ReplyType.IMAGE, qridimg)
+                # process_url is used for format the url msg in the reply
                 # reply_content = self.process_url(reply_content)
-                if self.apologymsg != "" and self.bot.chat_hub.apologied:
-                    context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)#Optional
+
+                if self.apologymsg and self.bot.chat_hub.apologied:
+                    #send tip msg and and reply content
+                    context.get("channel").send(Reply(ReplyType.TEXT, reply_content), context)
                     self.bot.chat_hub.apologied = False
                     return Reply(ReplyType.TEXT, self.apologymsg)
                 return Reply(ReplyType.TEXT, reply_content)
                 
             except Exception as e:
                 logger.error(e)
-                # context.get("channel").send(Reply(ReplyType.TEXT, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}"), context)
-                #TODO lastquery for per user, independently
-                # self.lastquery = None
+                self.lastquery = None
                 self.user_data["isinprocess"] = False
-                return Reply(ReplyType.INFO, f"我脑壳短路了一下，Sorry。\U0001F64F \n\nDebugger info:\n{e}")
-                # return Reply(ReplyType.TEXT, reply_content)
+                return Reply(ReplyType.INFO, f"我脑壳短路了一下, Sorry!\U0001F64F\n\nDebugg Info:\n{e}")
             
         # #todo IMAGE_CREATE    
         # elif context.type == ContextType.IMAGE_CREATE:
@@ -204,7 +191,6 @@ class SydneyBot(Bot):
             self.failedmsg = True
             await self.bot.close()
             logger.info("Conv Closed Successful!")
-            # context.get("channel").send(Reply(ReplyType.INFO, "你打断了本仙女的思考! \U0001F643"), context)
             self.current_responding_task = None
             self.user_data["isinprocess"] = False
             return "你打断了本仙女的思考! \U0001F643"
@@ -216,19 +202,19 @@ class SydneyBot(Bot):
     async def _chat(self, session, query, context, retry_count= 0):
         self.user_data["isinprocess"] = True
         if retry_count > 2: 
-            #delete the sydney tip message and the previous user message in this situation
             logger.warn("[SYDNEY] failed after maximum number of retry times")
             query = clip_message(query)
             self.failedmsg = True
-            # if len(session.messages) < 2:
-            #     self.lastquery = None
-            # else:
-            #     self.lastquery = session.messages[-2]['[user](#message)']
-            return f"(#{query}...)\n抱歉，请换一种方式提问吧!" 
+            if len(session.messages) < 2:
+                self.lastquery = None
+            else:
+                self.lastquery = session.messages[-2]['[user](#message)']
+            return f"(#{query}...)\n抱歉，请换一种方式提问吧!"
+        
         #get customer settings
         #TODO set voicespecices independently for users when there are users using the different tone at the same time
         #TODO switch persona by godcmd, use the query and the query includes id + persona's name, control this in godcmd 
-        sydney_prompt = None
+        sydney_prompt = str("")
         for customerdic in conf().get("customerSet"):
             for key, customPrompt in customerdic.items():
                 if key == context["session_id"]:
@@ -237,7 +223,7 @@ class SydneyBot(Bot):
                     nosearch = customerdic["nosearch"]
                     self.enablesuggest= customerdic["enablesuggest"]
                     conf().__setitem__("voicespecies", "zh-CN-liaoning-XiaobeiNeural")
-                    parrellfilter = True
+                    parrellfilter = True #Toggle parrell filter
         if not sydney_prompt:
             sydney_prompt = conf().get("character_desc")
             self.bot_statement = conf().get("sydney_statement")
@@ -245,13 +231,15 @@ class SydneyBot(Bot):
             self.enablesuggest = True
             conf().__setitem__("voicespecies", "zh-CN-XiaoxiaoNeural") #zh-CN-XiaoxiaoNeural optional, more matual
             parrellfilter = False
+
         if not context["isgroup"]:
-            self.bot_statement = ""
+            self.bot_statement = "" #when in single chat then no need to add statement
+
         preContext = sydney_prompt
 
         try:
             proxy = conf().get("proxy", "")                
-            file_path = os.path.relpath("../cookies.json")
+            file_path = os.path.relpath("./cookies.json")
             cookies = json.loads(open(file_path, encoding="utf-8").read())
             session_id = context["session_id"]
             session_message = session.messages
@@ -266,7 +254,7 @@ class SydneyBot(Bot):
                 base64_img = self.process_image_msg(session_id, img_cache)
                 # logger.info(imgurl)
                 imgurl = {"base64_image": base64_img}
-                "this is old sydneyqtv1 image process"
+                "this is sydneyqtv1 image process"
                 # if img_url:
                 #     try:
                 #         imgurlsuffix = await sydney.upload_image(img_base64=img_url, proxy=proxy)
@@ -309,8 +297,6 @@ class SydneyBot(Bot):
                 for keyPerson, message in singleTalk.items():
                     rest_messages += f"\n{keyPerson}\n{message}\n"
 
-            # rest_messages = rest_messages.strip("\n")  # Remove any extra newlines
-            #TODO for continous chats in a single convid
             preContext += rest_messages
             
             #todo add plugins
@@ -328,11 +314,6 @@ class SydneyBot(Bot):
             # logger.info(f"[SYDNEY] query={query}, file_id={file_id}")
             
             async def reedgegpt_chat_stream():
-                #TODO for continous chats in a single convid
-                # session_grp = list
-                # if session_id not in session_grp:
-                #     self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="sydney")
-                #     session_grp += list(session_id)
                 reply = ""
                 self.bot = await Chatbot.create(proxy=proxy, cookies=cookies, mode="Sydney")
                 logger.info(f"Convid:{self.bot.chat_hub.conversation_id}")
@@ -341,12 +322,12 @@ class SydneyBot(Bot):
                 consectivereply = ""
                 async for final, response in self.bot.ask_stream(
                         prompt=query,
-                        conversation_style="creative",
+                        conversation_style="precise",
                         search_result=nosearch,
-                        locale="en-US",
+                        locale="zh-TW",
                         webpage_context=preContext,
                         attachment=imgurl,
-                        no_link=True
+                        no_link=False
                 ):
                     if not final:
                         if not wrote:
@@ -358,10 +339,10 @@ class SydneyBot(Bot):
                             print(response[wrote:], end="", flush=True)
                             reply += str(response[wrote:])
                             # logger.info(reply)
-                            consectivereply += str(response[wrote:]).replace("\n", "").replace("*","")
+                            consectivereply += str(response[wrote:]).replace("\n", "")
                             if not context["voice"] and context["stream"]:
-                                if any(word in consectivereply for word in split_punctuation):#TODO cut how many sentences randomly, I want to send sentences individually
-                                    try:#TODO add emoji as split mark
+                                if any(word in consectivereply for word in split_punctuation):#TODO cut how many sentences randomly, not every one, 3112024 tried but failed cuz in the generator it always checks when a word generated, so it will be definitely send out a complete sentence and an incomplete sentence, but I want to send sentences individually, like they are units 
+                                    try:
                                         context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                                     except:
                                         context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
@@ -395,22 +376,15 @@ class SydneyBot(Bot):
                         else:
                             # reply = split_sentences(reply, split_punctuation)[-1:]
                             # reply = ''.join(reply)
-                            lastreply = split_sentences(reply, split_punctuation)[-1:]
-                            if len(lastreply) > 2:
-                                try:
-                                    context.get("channel").send(Reply(ReplyType.TEXT, ''.join(lastreply)), context)#FIXME sometimes this will not do
-                                except:
-                                    context.get("channel").send(Reply(ReplyType.TEXT, ''.join(lastreply)), context)
-                if len(consectivereply) >= 2: #":#Bug when msg preserved, it will send the same consectivereply again
+                            try:
+                                context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)
+                            except:
+                                context.get("channel").send(Reply(ReplyType.TEXT, ''.join(split_sentences(reply, split_punctuation)[-1:])), context)
+                if consectivereply != "":#Bug when msg preserved, it will send the same consectivereply again
                     if not context["voice"] and context["stream"]:
                         context.get("channel").send(Reply(ReplyType.TEXT, consectivereply), context)
                         consectivereply = ""
                 print()
-                #TODO for continous chat per convid
-                #if ....
-                    # self.sydney_chatlayer += preContext + f"\n[User]\n{query}\n[Assistant]\n{reply}"
-                    # preContext = ""
-                    # logger.info(f"Sydney_ChatLayer:\n{self.sydney_chatlayer}")
                 return reply
             
             bot_chatlayer_reply = await reedgegpt_chat_stream()
@@ -523,8 +497,7 @@ class SydneyBot(Bot):
         except Exception as e:
             import traceback
             traceback.print_exc()
-            logger.error(e)#TODO if error happens and the error is conn aborted, then load the generated msg into the session msgs, then retry, and use a question "continue from where you stopped"
-            # if "aborted" in str(e) and reply != "":
+            logger.error(e)
             try:
                 await self.bot.close()
             except:
@@ -532,14 +505,14 @@ class SydneyBot(Bot):
             if "throttled" in str(e) or "Throttled" in str(e) or "Authentication" in str(e):
                 logger.warn("[SYDNEY] ConnectionError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我累了，请联系我的主人帮我给新的饼干(Cookies)！\U0001F916"), context)
-                # self.lastquery = None
+                self.lastquery = None
                 session.messages.pop()
                 return 
             if "CAPTCHA" in str(e):
                 logger.warn("[SYDNEY] CAPTCHAError: {}".format(e))
                 context.get("channel").send(Reply(ReplyType.INFO, "我走丢了，请联系我的主人。(CAPTCHA!)\U0001F300"), context)
                 session.messages.pop()
-                # self.lastquery = None
+                self.lastquery = None
                 return 
             time.sleep(2)
             #done reply a retrying message
@@ -646,17 +619,19 @@ class SydneyBot(Bot):
         except Exception as e:
             logger.error(e)
 
-    def send_image(self, channel, context, image_urls):
-        if not image_urls:
-            return
-        try:
-            for url in image_urls:
-                reply = Reply(ReplyType.IMAGE_URL, url)
-                channel.send(reply, context)
-        except Exception as e:
-            logger.error(e)
+    # #TODO Image create sent
+    # def send_image(self, channel, context, image_urls):
+    #     if not image_urls:
+    #         return
+    #     try:
+    #         for url in image_urls:
+    #             reply = Reply(ReplyType.IMAGE_URL, url)
+    #             channel.send(reply, context)
+    #     except Exception as e:
+    #         logger.error(e)
     
 
+#sydneyv1retryprocess
 async def stream_conversation_replied(pre_reply, context, cookies, query, proxy, imgurl):
     conversation = await sydney.create_conversation(cookies=cookies, proxy=proxy)
     query_extended = f"从你停下的地方继续回答，100字以内，只输出内容的正文。"
@@ -701,119 +676,3 @@ async def stream_conversation_replied(pre_reply, context, cookies, query, proxy,
                 message = secresponse["item"]["messages"][-1]
                 if "suggestedResponses" in message:
                     return reply
-                
-# 拼接字符串，去除首尾重复部分
-def concat_reply(former_str: str, latter_str: str) -> str:
-    former_str = former_str.strip()
-    latter_str = latter_str.strip()
-    min_length = min(len(former_str), len(latter_str))
-    for i in range(min_length, 0, -1):
-        if former_str[-i:] == latter_str[:i]:
-            return former_str + latter_str[i:]
-    return former_str + latter_str
-
-def remove_extra_format(reply: str) -> str:
-    pattern = r'回复[^：]*：(.*)'
-    result = re.search(pattern, reply, re.S)
-    if result is None:
-        return reply
-    result = result.group(1).strip()
-    if result.startswith("“") and result.endswith("”"):
-        result = result[1:-1]
-    return result
-
-def except_chinese_char(string):
-    import unicodedata
-    # loop through each character in the string
-    for char in string:
-        # get the general category of the character
-        category = unicodedata.category(char)
-        # check if the category is Lo or Nl
-        if category == 'Lo' or category == 'Nl':
-        # return True if a Chinese character is found
-            return False
-    # return False if no Chinese character is found
-    return True
-
-def cut_botstatement(data, text_to_cut):
-    """Cuts the specified text from each dictionary in the given list.
-
-    Args:
-        data: A list of dictionaries.
-        text_to_cut: The text to cut from each dictionary.
-
-    Returns:
-        A new list of dictionaries with the specified text removed.
-    """
-
-    pattern = re.compile(text_to_cut)
-    return [{key: re.sub(pattern, "", value) for key, value in item.items()} for item in data]
-
-def detect_chinese_char_pair(context, threshold=5):
-  """
-  Detects pairs of consecutive Chinese characters that reach the threshold frequency.
-
-  Args:
-      context: The text string to analyze.
-      threshold: The minimum frequency for a pair to be considered (default 5).
-
-  Returns:
-      A tuple containing:
-          - True if at least one pair meets the threshold, False otherwise.
-          - A list of pairs exceeding the threshold (empty if none found).
-  """
-
-  # Create a dictionary to store the frequency of each pair.
-  freq = {}
-
-  # Loop through the context with a sliding window of size 2.
-  for i in range(len(context) - 1):
-    pair = context[i:i+2]
-
-    # Check if both characters are Chinese characters.
-    if '\u4e00' <= pair[0] <= '\u9fff' and '\u4e00' <= pair[1] <= '\u9fff':
-      # Increment the frequency of the pair or set it to 1 if not seen before.
-      freq[pair] = freq.get(pair, 0) + 1
-
-  # Find all pairs exceeding the threshold.
-  exceeding_pairs = [pair for pair, count in freq.items() if count >= threshold]
-
-  # Return results based on findings.
-  if exceeding_pairs:
-    return True, exceeding_pairs
-  else:
-    return False, []
-
-def clip_message(text):
-    if len(text) <= 10:
-        return text
-
-    if is_chinese(text):
-        return text[:10]
-    else:
-        return text[:10]
-
-def is_chinese(text):
-    for char in text:
-        if '\u4e00' <= char <= '\u9fff':
-            return True
-    return False
-
-def split_sentences(text, split_punctuation):
-  """Splits a text into sentences based on the provided punctuation marks.
-
-  Args:
-    text: The text to split.
-    split_punctuation: A list of punctuation marks to split on.
-
-  Returns:
-    A list of sentences.
-  """
-  sentences = []
-  start = 0
-  for i, char in enumerate(text):
-    if char in split_punctuation:
-      sentences.append(text[start:i+1])
-      start = i + 1
-  sentences.append(text[start:])
-  return sentences

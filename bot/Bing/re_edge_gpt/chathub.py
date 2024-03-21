@@ -12,17 +12,17 @@ import aiohttp
 import certifi
 import httpx
 
-from .constants import DELIMITER, SYDNEY_INIT_HEADER, SYDNEY_HEADER
-from .constants import HEADERS
-from .constants import HEADERS_INIT_CONVER
-from .conversation_style import CONVERSATION_STYLE_TYPE
-from .proxy import get_proxy
-from .image.upload_image import upload_image, upload_image_url
-from .utils.utilities import append_identifier
-from .utils.utilities import guess_locale
-from .conversation import Conversation
-from .request import ChatHubRequest
-from .utils.exception.exceptions import NoResultsFound, ResponseError
+from bot.Bing.re_edge_gpt.constants import DELIMITER, SYDNEY_INIT_HEADER, SYDNEY_HEADER
+from bot.Bing.re_edge_gpt.constants import HEADERS
+from bot.Bing.re_edge_gpt.constants import HEADERS_INIT_CONVER
+from bot.Bing.re_edge_gpt.conversation_style import CONVERSATION_STYLE_TYPE
+from bot.Bing.re_edge_gpt.proxy import get_proxy
+from bot.Bing.image.upload_image import upload_image, upload_image_url
+from bot.Bing.utils.utilities import append_identifier
+from bot.Bing.utils.utilities import guess_locale
+from bot.Bing.re_edge_gpt.conversation import Conversation
+from bot.Bing.re_edge_gpt.request import ChatHubRequest
+from bot.Bing.utils.exception.exceptions import NoResultsFound, ResponseError
 
 ssl_context = ssl.create_default_context()
 ssl_context.load_verify_locations(certifi.where())

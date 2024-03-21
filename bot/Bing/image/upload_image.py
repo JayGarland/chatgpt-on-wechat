@@ -3,7 +3,7 @@ import json
 
 import aiohttp
 
-from ..constants import IMAGE_HEADER
+from bot.Bing.re_edge_gpt.constants import IMAGE_HEADER
 
 payload = {
     "imageInfo": {},
