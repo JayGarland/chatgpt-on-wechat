@@ -15,11 +15,11 @@ import httpx
 import regex
 import requests
 
-from ..proxy import get_proxy
-from ..utils.exception.exception_message import sending_message, error_being_reviewed_prompt, \
+from bot.Bing.re_edge_gpt.proxy import get_proxy
+from bot.Bing.utils.exception.exception_message import sending_message, error_being_reviewed_prompt, \
     error_blocked_prompt, \
     error_unsupported_lang, error_timeout, error_noresults, error_no_images, download_message, error_image_create_failed
-from ..utils.exception.exceptions import UnSupportLanguage, PromptBlocked, ImageCreateFailed, NoResultsFound, \
+from bot.Bing.utils.exception.exceptions import UnSupportLanguage, PromptBlocked, ImageCreateFailed, NoResultsFound, \
     AuthCookieError, LimitExceeded, InappropriateContentType, ResponseError
 
 FORWARDED_IP = f"1.0.0.{random.randint(0, 255)}"
