@@ -19,7 +19,7 @@ def is_chinese(text):
             return True
     return False
 
-def trygen(model: genai.GenerativeModel, gemini_messages: list, max_retries = 1, delay = 1):
+def trygen(model: genai.GenerativeModel, gemini_messages: list, max_retries = 2, delay = 1):
     for i in range(max_retries):
         try:
             return model.generate_content(gemini_messages)
