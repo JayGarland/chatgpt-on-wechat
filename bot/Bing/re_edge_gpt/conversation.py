@@ -5,9 +5,9 @@ from typing import Union
 
 import httpx
 
-from .constants import HEADERS_INIT_CONVER, BUNDLE_VERSION, SYDNEY_INIT_HEADER
-from .proxy import get_proxy
-from .utils.exception.exceptions import NotAllowedToAccess, AuthCookieError
+from bot.Bing.re_edge_gpt.constants import HEADERS_INIT_CONVER, BUNDLE_VERSION, SYDNEY_INIT_HEADER
+from bot.Bing.re_edge_gpt.proxy import get_proxy
+from bot.Bing.utils.exception.exceptions import NotAllowedToAccess, AuthCookieError
 
 
 class Conversation:
