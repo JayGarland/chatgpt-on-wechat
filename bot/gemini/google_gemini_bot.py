@@ -18,6 +18,8 @@ from bot.gemini.utils import *
 from PIL import Image
 from common import memory
 import io
+import time
+import traceback
 
 
 
@@ -61,7 +63,6 @@ class GoogleGeminiBot(Bot):
                 return reply
             if context["isinprocess"]:
                 session.messages.pop()
-                # self.lastquery = "" #FIXME or not..
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             session = self.sessions.session_query(query, session_id)
             logger.debug(session.messages[-1]['content'])
@@ -80,7 +81,14 @@ class GoogleGeminiBot(Bot):
                 response = img_model.generate_content(gemini_messages_img) #when use the vision no persona
                 user_data["imgdone"] = True
             else:
-                response = trygen(model, gemini_messages)
+                for i in range(2):
+                    try:
+                        response = model.generate_content(gemini_messages)
+                    except Exception as e:
+                        user_data["isinprocess"] = False
+                        # traceback.print_exc()
+                        logger.error(f"Exception occurred: {e}. Retrying...")
+                        time.sleep(1)
             # logger.debug(response)
             reply_text = response.text
             self.sessions.session_reply(reply_text, session_id)
@@ -92,7 +100,6 @@ class GoogleGeminiBot(Bot):
                 return self.wrap_promo_msg(context, reply_text)
             return Reply(ReplyType.TEXT, reply_text)
         except Exception as e:
-            import traceback
             traceback.print_exc()
             logger.error("[Gemini] fetch reply error, may contain unsafe content")
             logger.error(e)
