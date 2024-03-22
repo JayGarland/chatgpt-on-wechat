@@ -64,6 +64,12 @@ class GoogleGeminiBot(Bot):
             if context["isinprocess"]:
                 session.messages.pop()
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
+            #web fetch
+            webPagecache = memory.USER_WEBPAGE_CACHE.get(session_id)
+            if webPagecache:
+                query = f"\n[user](#webpage_context)\n{webPagecache}\n\n\n" + query 
+                logger.debug(memory.USER_WEBPAGE_CACHE)
+                del memory.USER_WEBPAGE_CACHE[session_id]
             session = self.sessions.session_query(query, session_id)
             logger.debug(session.messages[-1]['content'])
             if context["imgdone"]:
