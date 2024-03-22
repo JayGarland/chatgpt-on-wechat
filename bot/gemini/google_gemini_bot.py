@@ -140,6 +140,8 @@ class GoogleGeminiBot(Bot):
     def _filter_messages(self, messages: list):
         res = []
         turn = "user"
+        if not messages:
+            return res
         for i in range(len(messages) - 1, -1, -1):
             message = messages[i]
             if message.get("role") != turn:
