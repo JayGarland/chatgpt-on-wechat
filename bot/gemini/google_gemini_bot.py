@@ -70,6 +70,16 @@ class GoogleGeminiBot(Bot):
                 query = f"\n[user](#webpage_context)\n{webPagecache}\n\n\n" + query 
                 logger.debug(memory.USER_WEBPAGE_CACHE)
                 del memory.USER_WEBPAGE_CACHE[session_id]
+            #file fetch
+            fileCache = memory.USER_FILE_CACHE.get(session_id)
+            logger.info(fileCache)
+            if fileCache:
+                fileinfo = self.process_file_msg(session_id, fileCache)
+                if fileinfo:
+                    if f"\U0001F605" in fileinfo:
+                        return fileinfo
+                    else:
+                        query = fileinfo + "\n\n\n" + query
             session = self.sessions.session_query(query, session_id)
             logger.debug(session.messages[-1]['content'])
             if context["imgdone"]:
@@ -201,5 +211,17 @@ class GoogleGeminiBot(Bot):
             img = Image.open(io.BytesIO(img_bytes))
             memory.USER_IMAGE_CACHE[session_id] = None
             return img
+        except Exception as e:
+            logger.exception(e)
+
+    def process_file_msg(self, session_id, file_cache):
+        try:
+            msg = file_cache.get("msg")
+            path = file_cache.get("path")
+            msg.prepare()
+            logger.info(f"[Gemini] query with files, path={path}")              
+            messages = asyncio.run(build_docx_msg(path))
+            del memory.USER_FILE_CACHE[session_id]
+            return messages
         except Exception as e:
             logger.exception(e)
