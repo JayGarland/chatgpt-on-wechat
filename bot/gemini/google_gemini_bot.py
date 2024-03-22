@@ -40,10 +40,10 @@ class GoogleGeminiBot(Bot):
             session_id = context["session_id"]
             session = self.sessions.session_query(query, session_id)
             reply = None
-            clear_memory_commands = conf().get("clear_memory_commands", ["#清除记忆"])
-            if query.lower() in clear_memory_commands:
+            if query == "killprocess":
+                user_data["isinprocess"] = False
                 self.sessions.clear_session(session_id)
-                reply = Reply(ReplyType.INFO, "记忆已清除")
+                reply = Reply(ReplyType.INFO, "进程已清除")
             elif query == "#清除所有":
                 self.sessions.clear_all_session()
                 reply = Reply(ReplyType.INFO, "所有人记忆已清除")
@@ -64,7 +64,7 @@ class GoogleGeminiBot(Bot):
             if context["isinprocess"]:
                 session.messages.pop()
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
-            #web fetch
+            #web fetch #TODO web fetch not only through link but from user's text
             webPagecache = memory.USER_WEBPAGE_CACHE.get(session_id)
             if webPagecache:
                 query = f"\n[user](#webpage_context)\n{webPagecache}\n\n\n" + query 
@@ -119,6 +119,7 @@ class GoogleGeminiBot(Bot):
             traceback.print_exc()
             logger.error("[Gemini] fetch reply error, may contain unsafe content")
             logger.error(e)
+            user_data["isinprocess"] = False
             return Reply(ReplyType.INFO, f"我脑壳短路了一下，Sorry！\U0001F64F \n\nDebug Info:\n{e}")
 
     def _convert_to_gemini_messages(self, messages: list):
