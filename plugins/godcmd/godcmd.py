@@ -366,10 +366,10 @@ class Godcmd(Plugin):
                     ok, result = True, f"OK!"
                 elif cmd == "outputmode":
                     user_data = conf().get_user_data(user)
-                    ok, result = True, f"voice: {e_context['context']['voice']}\nstream: {e_context['context']['stream']}"
+                    ok, result = True, f"voice: {e_context['context']['voice']}\nstream: {e_context['context']['stream']}\nreadfeedback: {e_context['context']['readfb']}"
                 elif cmd == "switchreadfb":
                     user_data = conf().get_user_data(user)
-                    logger.info(e_context["context"]["readfb"])
+                    # logger.info(e_context["context"]["readfb"])
                     if e_context["context"]["readfb"]:
                         user_data["readfb"] = False
                         ok, result = True, f"The read feedback has been disabled!"

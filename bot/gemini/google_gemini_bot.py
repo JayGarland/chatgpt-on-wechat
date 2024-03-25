@@ -72,7 +72,7 @@ class GoogleGeminiBot(Bot):
                 del memory.USER_WEBPAGE_CACHE[session_id]
             #file fetch
             fileCache = memory.USER_FILE_CACHE.get(session_id)
-            logger.info(fileCache)
+            # logger.debug(fileCache)
             if fileCache:
                 fileinfo = self.process_file_msg(session_id, fileCache)
                 if fileinfo:

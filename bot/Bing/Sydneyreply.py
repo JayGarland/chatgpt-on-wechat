@@ -224,6 +224,7 @@ class SydneyBot(Bot):
                     self.enablesuggest= customerdic["enablesuggest"]
                     conf().__setitem__("voicespecies", "zh-CN-liaoning-XiaobeiNeural")
                     parrellfilter = True #Toggle parrell filter
+                    break
         if not sydney_prompt:
             sydney_prompt = conf().get("character_desc")
             self.bot_statement = conf().get("sydney_statement")
