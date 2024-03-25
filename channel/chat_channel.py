@@ -63,6 +63,7 @@ class ChatChannel(Channel):
             context["stream"] = user_data.get("stream")
             context["isinprocess"] = user_data.get("isinprocess")
             context["imgdone"] = user_data.get("imgdone")
+            context["readfb"] = user_data.get("readfb")
             if context["stream"] is None:
                 context["stream"] = False
             if context["voice"] is None:
@@ -71,6 +72,8 @@ class ChatChannel(Channel):
                 context["isinprocess"] = False
             if context["imgdone"] is None:
                 context["imgdone"] = False
+            if context["readfb"] is None:
+                context["readfb"] = True
             if context.get("isgroup", False):
                 group_name = cmsg.other_user_nickname
                 group_id = cmsg.other_user_id
@@ -219,8 +222,9 @@ class ChatChannel(Channel):
                 context["channel"] = e_context["channel"]
                 #done make the certain instruction loaded in the config.json instead writing it in the code
                 sydneykeywords = conf().get("sydney_keywords")
-                if context.content.lower() not in sydneykeywords:
-                    self._send_reply(context, Reply(ReplyType.TEXT, "消息收到啦！💌\n正在思考中!💭"))
+                if context["readfb"]:
+                    if context.content.lower() not in sydneykeywords:
+                        self._send_reply(context, Reply(ReplyType.TEXT, "消息收到啦！💌\n正在思考中!💭"))
                 reply = super().build_reply_content(context.content, context)
             elif context.type == ContextType.VOICE:  # 语音消息
                 cmsg = context["msg"]

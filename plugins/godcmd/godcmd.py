@@ -84,6 +84,10 @@ COMMANDS = {
     "outputmode":{
         "alias": ["outputmode"],
         "desc": "checkoutputmode"
+    },
+    "switchreadfb":{
+        "alias": ["switchreadfb"],
+        "desc": "switch the read notification."
     }
 }
 
@@ -363,6 +367,15 @@ class Godcmd(Plugin):
                 elif cmd == "outputmode":
                     user_data = conf().get_user_data(user)
                     ok, result = True, f"voice: {e_context['context']['voice']}\nstream: {e_context['context']['stream']}"
+                elif cmd == "switchreadfb":
+                    user_data = conf().get_user_data(user)
+                    logger.info(e_context["context"]["readfb"])
+                    if e_context["context"]["readfb"]:
+                        user_data["readfb"] = False
+                        ok, result = True, f"The read feedback has been disabled!"
+                    else:
+                        user_data["readfb"] = True
+                        ok, result = True, f"The read feedback has been enabled!"
                 logger.debug("[Godcmd] command: %s by %s" % (cmd, user))
             elif any(cmd in info["alias"] for info in ADMIN_COMMANDS.values()):
                 if isadmin:
