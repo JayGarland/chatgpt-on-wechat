@@ -79,7 +79,7 @@ class GoogleGeminiBot(Bot):
                     if f"\U0001F605" in fileinfo:
                         return fileinfo
                     else:
-                        query = fileinfo + "\n\n\n" + query
+                        query = fileinfo + "\n\n[user](#message)\n" + query
             session = self.sessions.session_query(query, session_id)
             logger.debug(session.messages[-1]['content'])
             if context["imgdone"]:
@@ -93,6 +93,8 @@ class GoogleGeminiBot(Bot):
             img_cache = memory.USER_IMAGE_CACHE.get(session_id)
             if img_cache:
                 img = self.process_img(session_id, img_cache)
+                persona, noused_prereply = self.init_prompt_botstatement(context)
+                query = persona + f"\n\n[user](#message)\n{query}"
                 gemini_messages_img = [query, img]
                 response = img_model.generate_content(gemini_messages_img) #when use the vision no persona
                 user_data["imgdone"] = True
@@ -112,6 +114,7 @@ class GoogleGeminiBot(Bot):
             if context["isgroup"] and not context["stream"] and not context["voice"]:
                 reply_text += "\n\n" + self.bot_statement
             user_data["isinprocess"] = False
+            reply_text = reply_text.replace("*", "")
             if len(session.messages) == 3:
                 return self.wrap_promo_msg(context, reply_text)
             return Reply(ReplyType.TEXT, reply_text)
