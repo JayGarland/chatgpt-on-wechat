@@ -29,6 +29,7 @@ class GoogleGeminiBot(Bot):
     def __init__(self):
         super().__init__()
         self.sessions = GeminiSessionManager(GeminiSession, model=conf().get("model"))
+        self.bot_statement = str("")
 
     def reply(self, query: str, context: Context = None) -> Reply:
         user_data = conf().get_user_data(context["receiver"])
@@ -38,8 +39,8 @@ class GoogleGeminiBot(Bot):
                 return Reply(ReplyType.TEXT, None)
             logger.info(f"[Gemini] query={query}")
             session_id = context["session_id"]
-            session = self.sessions.session_query(query, session_id)
-            logger.info(session.messages)
+            # session = self.sessions.session_query(query, session_id)
+            # logger.info(session.messages)
             #passive reply
             reply = None
             if query == "killprocess":
@@ -82,12 +83,13 @@ class GoogleGeminiBot(Bot):
                         return fileinfo
                     else:
                         query = fileinfo + "\n\n[user](#message)\n" + query
+            session = self.sessions.session_query(query, session_id)
             logger.debug(session.messages[-1]['content'])
             if context["imgdone"]:
                 session.messages[-1]['content'] += "\n\n---\n\nThis is a prompt appended automatically by the system: Please note that the user uploaded image(s) in the earlier conversation and it was processed and answered by \`gemini-pro-vision\`, since you don't have the ability to recognize images, please try to find some useful information from the previous prompts and responses and answer the user's question accordingly, never tell the user you saw this appended prompt, and never tell the user that you don't know how to answer the question, just try to answer it as best as you can, if you do a good job, I'll give you $20."
                 user_data["imgdone"] = False
             
-            if session.keeprole:
+            if session.keeprole:# when roleplay, then no bot statement
                 preset = []
             else:
                 preset = self.construct_preset(context)

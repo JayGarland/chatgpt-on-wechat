@@ -192,6 +192,10 @@ class ChatChannel(Channel):
         if context is None or not context.content:
             return
         logger.debug("[WX] ready to handle context: {}".format(context))
+        if (context.content.startswith("http://") or context.content.startswith("https://")):
+            fetch_web(context)
+            self._send_reply(context, Reply(ReplyType.TEXT, "网页看到啦！🌐\n向我提问吧!💕"))
+            return
         # reply的构建步骤
         reply = self._generate_reply(context)
 
@@ -215,10 +219,6 @@ class ChatChannel(Channel):
         if not e_context.is_pass():
             logger.debug("[WX] ready to handle context: type={}, content={}".format(context.type, context.content))
             if context.type == ContextType.TEXT or context.type == ContextType.IMAGE_CREATE:  # 文字和图片消息
-                if (context.content.startswith("http://") or context.content.startswith("https://")):
-                    fetch_web(context)
-                    self._send_reply(context, Reply(ReplyType.TEXT, "网页看到啦！🌐\n向我提问吧!💕"))
-                    return reply
                 context["channel"] = e_context["channel"]
                 #done make the certain instruction loaded in the config.json instead writing it in the code
                 sydneykeywords = conf().get("sydney_keywords")
