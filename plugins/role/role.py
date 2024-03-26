@@ -26,7 +26,11 @@ class RolePlay:
 
     def action(self, user_action):
         session = self.bot.sessions.build_session(self.sessionid)
-        if session.system_prompt != self.desc:  # 目前没有触发session过期事件，这里先简单判断，然后重置
+        try:#this is eclusive for Geminisession
+            keeprole = session.keeprole
+        except:
+            pass
+        if session.system_prompt != self.desc or not keeprole:
             session.set_system_prompt(self.desc)
         prompt = self.wrapper % user_action
         return prompt
