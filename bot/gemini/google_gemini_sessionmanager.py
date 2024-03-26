@@ -7,6 +7,7 @@ class GeminiSession(Session):
         super().__init__(session_id, system_prompt)
         self.model = model
         self.promptupdated = False
+        self.keeprole = False
         self.reset()
 
     def set_system_prompt(self, system_prompt):
@@ -19,6 +20,7 @@ class GeminiSessionManager(SessionManager):
         session = self.build_session(session_id)
         if self.sessions[session_id].promptupdated:
             query = self.sessions[session_id].system_prompt + f"\n\n\n{query}"
+            self.sessions[session_id].keeprole = True
         session.add_query(query)
         self.sessions[session_id].promptupdated = False
         try:

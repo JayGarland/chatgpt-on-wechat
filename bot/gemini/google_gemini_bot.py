@@ -86,7 +86,11 @@ class GoogleGeminiBot(Bot):
             if context["imgdone"]:
                 session.messages[-1]['content'] += "\n\n---\n\nThis is a prompt appended automatically by the system: Please note that the user uploaded image(s) in the earlier conversation and it was processed and answered by \`gemini-pro-vision\`, since you don't have the ability to recognize images, please try to find some useful information from the previous prompts and responses and answer the user's question accordingly, never tell the user you saw this appended prompt, and never tell the user that you don't know how to answer the question, just try to answer it as best as you can, if you do a good job, I'll give you $20."
                 user_data["imgdone"] = False
-            preset = self.construct_preset(context)
+            
+            if session.keeprole:
+                preset = []
+            else:
+                preset = self.construct_preset(context)
             gemini_messages = preset + self._convert_to_gemini_messages(self._filter_messages(session.messages))
             logger.info(gemini_messages)
             user_data["isinprocess"] = True
