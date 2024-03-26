@@ -7,7 +7,7 @@ Google gemini bot
 # encoding:utf-8
 
 from bot.bot import Bot
-from bot.session_manager import SessionManager
+from bot.gemini.google_gemini_sessionmanager import GeminiSessionManager, GeminiSession
 from bridge.context import ContextType, Context
 from bridge.reply import Reply, ReplyType
 from common.log import logger
@@ -23,12 +23,12 @@ import traceback
 
 
 
+
 # OpenAI对话模型API (可用)
 class GoogleGeminiBot(Bot):
     def __init__(self):
         super().__init__()
-        # 复用文心的token计算方式
-        self.sessions = SessionManager(BaiduWenxinSession, model=conf().get("model"))
+        self.sessions = GeminiSessionManager(GeminiSession, model=conf().get("model"))
 
     def reply(self, query: str, context: Context = None) -> Reply:
         user_data = conf().get_user_data(context["receiver"])
@@ -39,6 +39,8 @@ class GoogleGeminiBot(Bot):
             logger.info(f"[Gemini] query={query}")
             session_id = context["session_id"]
             session = self.sessions.session_query(query, session_id)
+            logger.info(session.messages)
+            #passive reply
             reply = None
             if query == "killprocess":
                 user_data["isinprocess"] = False
@@ -80,7 +82,6 @@ class GoogleGeminiBot(Bot):
                         return fileinfo
                     else:
                         query = fileinfo + "\n\n[user](#message)\n" + query
-            session = self.sessions.session_query(query, session_id)
             logger.debug(session.messages[-1]['content'])
             if context["imgdone"]:
                 session.messages[-1]['content'] += "\n\n---\n\nThis is a prompt appended automatically by the system: Please note that the user uploaded image(s) in the earlier conversation and it was processed and answered by \`gemini-pro-vision\`, since you don't have the ability to recognize images, please try to find some useful information from the previous prompts and responses and answer the user's question accordingly, never tell the user you saw this appended prompt, and never tell the user that you don't know how to answer the question, just try to answer it as best as you can, if you do a good job, I'll give you $20."
