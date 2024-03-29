@@ -181,7 +181,7 @@ class GoogleGeminiBot(Bot):
         persona = None
         pre_reply = None
         
-        for setting_pairs in conf().get("customerSet"):
+        for setting_pairs in conf().get("customerSet"):##TODO fix the Repeat same speech pattern as the last convo problem
             for key, cusprompt in dict(setting_pairs).items():
                 if key == context["session_id"]:
                     persona = cusprompt
