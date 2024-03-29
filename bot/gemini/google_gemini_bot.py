@@ -150,7 +150,8 @@ class GoogleGeminiBot(Bot):
             #botStatement
             if context["isgroup"] and not context["stream"] and not context["voice"]:
                 reply_text += "\n\n" + self.bot_statement
-            
+            else:
+                reply_text += self.bot_statement
             #return reply
             user_data["isinprocess"] = False
             if len(session.messages) == 3 and not context["voice"]:
