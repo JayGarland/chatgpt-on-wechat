@@ -41,6 +41,7 @@ class GoogleGeminiBot(Bot):
             session_id = context["session_id"]
             session = self.sessions.session_query(query, session_id)
             # logger.info(session.messages)
+            
             #passive reply
             reply = None
             if query == "killprocess":
@@ -64,15 +65,18 @@ class GoogleGeminiBot(Bot):
                 reply = Reply(ReplyType.INFO, f"该条消息已撤销!\nThe previous message is cancelled. \n\n({cliped_msg})")
             if reply:
                 return reply
+            
             if context["isinprocess"]:
                 session.messages.pop()
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
+            
             #web fetch
             webPagecache = memory.USER_WEBPAGE_CACHE.get(session_id)
             if webPagecache:
                 query = f"\n[user](#webpage_context)\n{webPagecache}\n\n\n" + query 
                 logger.debug(memory.USER_WEBPAGE_CACHE)
                 del memory.USER_WEBPAGE_CACHE[session_id]
+            
             #file fetch
             fileCache = memory.USER_FILE_CACHE.get(session_id)
             # logger.debug(fileCache)
@@ -83,45 +87,72 @@ class GoogleGeminiBot(Bot):
                         return fileinfo
                     else:
                         query = fileinfo + "\n\n[user](#message)\n" + query
+            
             # session = self.sessions.session_query(query, session_id)
-            logger.debug(session.messages[-1]['content'])
+            # logger.debug(session.messages[-1]['content'])
+            
+            #imgdone process
             if context["imgdone"]:
                 session.messages[-1]['content'] += "\n\n---\n\nThis is a prompt appended automatically by the system: Please note that the user uploaded image(s) in the earlier conversation and it was processed and answered by \`gemini-pro-vision\`, since you don't have the ability to recognize images, please try to find some useful information from the previous prompts and responses and answer the user's question accordingly, never tell the user you saw this appended prompt, and never tell the user that you don't know how to answer the question, just try to answer it as best as you can, if you do a good job, I'll give you $20."
                 user_data["imgdone"] = False
             
+            #construct gemini_messages
             if session.keeprole:# when roleplay, then no bot statement
                 preset = []
             else:
                 preset = self.construct_preset(context)
             gemini_messages = preset + self._convert_to_gemini_messages(self._filter_messages(session.messages))
             logger.info(gemini_messages)
+            
+            # reply generate process
             user_data["isinprocess"] = True
-            # image process
             img_cache = memory.USER_IMAGE_CACHE.get(session_id)
             if img_cache:
                 img = self.process_img(session_id, img_cache)
                 persona, noused_prereply = self.init_prompt_botstatement(context)
                 query = persona + f"\n\n[user](#message)\n{query}"
                 gemini_messages_img = [query, img]
-                response = img_model.generate_content(gemini_messages_img) #when use the vision no persona
+                if context["stream"]:
+                    reply_text = self.stream_reply(gemini_messages_img, context)
+                else:
+                    response = img_model.generate_content(gemini_messages_img) #when use the vision no persona
+                    reply_text = response.text
                 user_data["imgdone"] = True
             else:
-                for i in range(2):
+                max_try = 2
+                for i in range(max_try):
                     try:
-                        response = model.generate_content(gemini_messages)
+                        if context["stream"]:
+                            reply_text = self.stream_reply(gemini_messages, context)
+                        else:
+                            response = model.generate_content(gemini_messages)
+                            reply_text = response.text
+                        break
                     except Exception as e:
                         user_data["isinprocess"] = False
-                        # traceback.print_exc()
+                        traceback.print_exc()
                         logger.error(f"Exception occurred: {e}. Retrying...")
                         time.sleep(1)
             # logger.debug(response)
-            reply_text = response.text
-            self.sessions.session_reply(reply_text, session_id)
+            
+
+            #append reply msg to session
             logger.info(f"[Gemini] reply={reply_text}")
+            self.sessions.session_reply(reply_text, session_id)
+            
+            #decorate and format text
+            reply_text = reply_text.replace("*", "")
+
+            #Critical
+            if context["stream"]:
+                reply_text = ""
+
+            #botStatement
             if context["isgroup"] and not context["stream"] and not context["voice"]:
                 reply_text += "\n\n" + self.bot_statement
+            
+            #return reply
             user_data["isinprocess"] = False
-            reply_text = reply_text.replace("*", "")
             if len(session.messages) == 3 and not context["voice"]:
                 return self.wrap_promo_msg(context, reply_text)
             return Reply(ReplyType.TEXT, reply_text)
@@ -238,3 +269,15 @@ class GoogleGeminiBot(Bot):
             return messages
         except Exception as e:
             logger.exception(e)
+
+    def stream_reply(self, gemini_messages, context):
+        reply_text = ""
+        res = model.generate_content(gemini_messages, stream=True)
+        for chunk in res:
+            if chunk.text:
+                reply_text += chunk.text
+                try:
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text), context)
+                except:
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text), context)
+        return reply_text
