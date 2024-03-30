@@ -115,7 +115,7 @@ class GoogleGeminiBot(Bot):
                 query = persona + f"\n\n[user](#message)\n{query}"
                 gemini_messages_img = [query, img]
                 if context["stream"]:
-                    reply_text = self.stream_reply(gemini_messages_img, context)
+                    reply_text = self.stream_reply(gemini_messages_img, context, img_model)
                 else:
                     response = img_model.generate_content(gemini_messages_img) #when use the vision no persona
                     reply_text = response.text
@@ -125,7 +125,7 @@ class GoogleGeminiBot(Bot):
                 for i in range(max_try):
                     try:
                         if context["stream"]:
-                            reply_text = self.stream_reply(gemini_messages, context)
+                            reply_text = self.stream_reply(gemini_messages, context, model)
                         else:
                             response = model.generate_content(gemini_messages)
                             reply_text = response.text
@@ -275,7 +275,7 @@ class GoogleGeminiBot(Bot):
         except Exception as e:
             logger.exception(e)
 
-    def stream_reply(self, gemini_messages, context):
+    def stream_reply(self, gemini_messages, context, model):
         reply_text = ""
         res = model.generate_content(gemini_messages, stream=True)
         for chunk in res:
