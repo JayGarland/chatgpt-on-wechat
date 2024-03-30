@@ -39,6 +39,26 @@ class GoogleGeminiBot(Bot):
                 return Reply(ReplyType.TEXT, None)
             logger.info(f"[Gemini] query={query}")
             session_id = context["session_id"]
+
+
+            #web fetch
+            webPagecache = memory.USER_WEBPAGE_CACHE.get(session_id)
+            if webPagecache:
+                query = f"\n[user](#webpage_context)\n{webPagecache}\n\n\n" + query 
+                logger.debug(memory.USER_WEBPAGE_CACHE)
+                del memory.USER_WEBPAGE_CACHE[session_id]
+            
+            #file fetch
+            fileCache = memory.USER_FILE_CACHE.get(session_id)
+            # logger.debug(fileCache)
+            if fileCache:
+                fileinfo = self.process_file_msg(session_id, fileCache)
+                if fileinfo:
+                    if f"\U0001F605" in fileinfo:
+                        return fileinfo
+                    else:
+                        query = fileinfo + "\n\n[user](#message)\n" + query
+
             session = self.sessions.session_query(query, session_id)
             # logger.info(session.messages)
             
@@ -70,24 +90,6 @@ class GoogleGeminiBot(Bot):
                 session.messages.pop()
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             
-            #web fetch
-            webPagecache = memory.USER_WEBPAGE_CACHE.get(session_id)
-            if webPagecache:
-                query = f"\n[user](#webpage_context)\n{webPagecache}\n\n\n" + query 
-                logger.debug(memory.USER_WEBPAGE_CACHE)
-                del memory.USER_WEBPAGE_CACHE[session_id]
-            
-            #file fetch
-            fileCache = memory.USER_FILE_CACHE.get(session_id)
-            # logger.debug(fileCache)
-            if fileCache:
-                fileinfo = self.process_file_msg(session_id, fileCache)
-                if fileinfo:
-                    if f"\U0001F605" in fileinfo:
-                        return fileinfo
-                    else:
-                        query = fileinfo + "\n\n[user](#message)\n" + query
-            
             # session = self.sessions.session_query(query, session_id)
             # logger.debug(session.messages[-1]['content'])
             
@@ -101,7 +103,7 @@ class GoogleGeminiBot(Bot):
                 preset = []
             else:
                 preset = self.construct_preset(context)
-            gemini_messages = preset + self._convert_to_gemini_messages(self._filter_messages(session.messages))
+            gemini_messages = preset + self._convert_to_gemini_messages(GoogleGeminiBot.filter_messages(session.messages))
             logger.info(gemini_messages)
             
             # reply generate process
@@ -148,10 +150,11 @@ class GoogleGeminiBot(Bot):
                 reply_text = ""
 
             #botStatement
-            if context["isgroup"] and not context["stream"] and not context["voice"]:
-                reply_text += "\n\n" + self.bot_statement
-            else:
-                reply_text += self.bot_statement
+            if self.bot_statement:
+                if context["isgroup"] and not context["stream"] and not context["voice"]:
+                    reply_text += "\n\n" + self.bot_statement
+                else:
+                    reply_text += self.bot_statement
             #return reply
             user_data["isinprocess"] = False
             if len(session.messages) == 3 and not context["voice"]:
@@ -233,10 +236,10 @@ class GoogleGeminiBot(Bot):
     
     def wrap_promo_msg(self, context, reply_text):
         credit = conf().get("sydney_credit")
-        if not context["isgroup"] and context["stream"]:
-            reply_text += credit
-        else: 
+        if context["isgroup"]: 
             reply_text += "\n\n" + credit
+        else:
+            reply_text += credit
         qridimg = open('.\wechatID.jpg', 'rb')
         try:
             context.get("channel").send(Reply(ReplyType.TEXT, reply_text), context)
@@ -279,7 +282,7 @@ class GoogleGeminiBot(Bot):
             if chunk.text:
                 reply_text += chunk.text
                 try:
-                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text), context)
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("*", "")), context)
                 except:
-                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text), context)
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("*", "")), context)
         return reply_text
