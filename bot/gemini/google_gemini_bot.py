@@ -179,7 +179,8 @@ class GoogleGeminiBot(Bot):
             })
         return res
 
-    def _filter_messages(self, messages: list):
+    @staticmethod
+    def filter_messages(messages: list):
         res = []
         turn = "user"
         if not messages:
