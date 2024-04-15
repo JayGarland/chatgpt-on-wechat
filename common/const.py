@@ -9,6 +9,12 @@ LINKAI = "linkai"
 CLAUDEAI = "claude"
 CLAUDEAPI= "claudeAPI"
 QWEN = "qwen"
+
+QWEN_DASHSCOPE = "dashscope"
+QWEN_TURBO = "qwen-turbo"
+QWEN_PLUS = "qwen-plus"
+QWEN_MAX = "qwen-max"
+
 GEMINI = "gemini"
 ZHIPU_AI = "glm-4"
 MOONSHOT = "moonshot"
