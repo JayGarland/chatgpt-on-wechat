@@ -19,7 +19,6 @@ class GeminiSessionManager(SessionManager):
     def session_query(self, query, session_id):
         session = self.build_session(session_id)
         if self.sessions[session_id].promptupdated:
-            query = self.sessions[session_id].system_prompt + f"\n\n\n{query}"
             self.sessions[session_id].keeprole = True
         session.add_query(query)
         self.sessions[session_id].promptupdated = False
