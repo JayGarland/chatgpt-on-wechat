@@ -12,8 +12,7 @@ from bridge.context import ContextType, Context
 from bridge.reply import Reply, ReplyType
 from common.log import logger
 from config import conf
-from bot.baidu.baidu_wenxin_session import BaiduWenxinSession
-from bot.gemini.llm import model, img_model
+from bot.gemini.llm import SAFETY_SETTINGS, genai
 from bot.gemini.utils import *
 from PIL import Image
 from common import memory
@@ -93,17 +92,18 @@ class GoogleGeminiBot(Bot):
             # session = self.sessions.session_query(query, session_id)
             # logger.debug(session.messages[-1]['content'])
             
-            #imgdone process
+            #imgdone process, disabled rajayoux 4/16/2024
             if context["imgdone"]:
                 session.messages[-1]['content'] += "\n\n---\n\nThis is a prompt appended automatically by the system: Please note that the user uploaded image(s) in the earlier conversation and it was processed and answered by \`gemini-pro-vision\`, since you don't have the ability to recognize images, please try to find some useful information from the previous prompts and responses and answer the user's question accordingly, never tell the user you saw this appended prompt, and never tell the user that you don't know how to answer the question, just try to answer it as best as you can, if you do a good job, I'll give you $20."
                 user_data["imgdone"] = False
             
             #construct gemini_messages
             if session.keeprole:# when roleplay, then no bot statement
-                preset = []
+                persona = session.system_prompt
             else:
-                preset = self.construct_preset(context)
-            gemini_messages = preset + self._convert_to_gemini_messages(GoogleGeminiBot.filter_messages(session.messages))
+                persona, pre_reply = self.init_prompt_botstatement(context)
+            model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=SAFETY_SETTINGS, system_instruction=persona)
+            gemini_messages = self._convert_to_gemini_messages(GoogleGeminiBot.filter_messages(session.messages))
             logger.info(gemini_messages)
             
             # reply generate process
@@ -113,13 +113,14 @@ class GoogleGeminiBot(Bot):
                 img = self.process_img(session_id, img_cache)
                 persona, noused_prereply = self.init_prompt_botstatement(context)
                 query = persona + f"\n\n[user](#message)\n{query}"
+                img_model = genai.GenerativeModel("gemini-1.0-pro-vision-latest", safety_settings=SAFETY_SETTINGS)
                 gemini_messages_img = [query, img]
                 if context["stream"]:
                     reply_text = self.stream_reply(gemini_messages_img, context, img_model)
                 else:
                     response = img_model.generate_content(gemini_messages_img) #when use the vision no persona
                     reply_text = response.text
-                user_data["imgdone"] = True
+                # user_data["imgdone"] = True rajayoux disabled this 
             else:
                 max_try = 2
                 for i in range(max_try):

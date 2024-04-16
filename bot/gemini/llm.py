@@ -19,6 +19,3 @@ if not keys:
     raise Exception("Please set a valid API key in Config!")
 genai.configure(api_key=random.choice(keys))
 
-
-model = genai.GenerativeModel("gemini-pro", safety_settings=SAFETY_SETTINGS)
-img_model = genai.GenerativeModel("gemini-pro-vision", safety_settings=SAFETY_SETTINGS)
