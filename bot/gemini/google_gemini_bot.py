@@ -143,8 +143,8 @@ class GoogleGeminiBot(Bot):
             logger.info(f"[Gemini] reply={reply_text}")
             self.sessions.session_reply(reply_text, session_id)
             
-            #decorate and format text
-            reply_text = reply_text.replace("*", "")
+            #decorate and format text, disabled this because it makes trouble when in math or code question
+            # reply_text = reply_text.replace("*", "")
 
             #Critical
             if context["stream"]:
@@ -238,9 +238,9 @@ class GoogleGeminiBot(Bot):
     def wrap_promo_msg(self, context, reply_text):
         credit = conf().get("sydney_credit")
         if context["isgroup"]: 
-            reply_text += "\n\n" + credit
+            reply_text += "\n\n" + str(credit).format(mode = f"语音: {context['voice']}\n流式输出: {context['stream']}\n已读通知: {context['readfb']}")
         else:
-            reply_text += credit
+            reply_text += str(credit).format(mode = f"语音: {context['voice']}\n流式输出: {context['stream']}\n已读通知: {context['readfb']}")
         qridimg = open('.\wechatID.jpg', 'rb')
         try:
             context.get("channel").send(Reply(ReplyType.TEXT, reply_text), context)
@@ -283,7 +283,7 @@ class GoogleGeminiBot(Bot):
             if chunk.text:
                 reply_text += chunk.text
                 try:
-                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("*", "")), context)
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text), context)
                 except:
-                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("*", "")), context)
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text), context)
         return reply_text
