@@ -122,20 +122,18 @@ class GoogleGeminiBot(Bot):
                     reply_text = response.text
                 # user_data["imgdone"] = True rajayoux disabled this 
             else:
-                max_try = 2
-                for i in range(max_try):
-                    try:
-                        if context["stream"]:
-                            reply_text = self.stream_reply(gemini_messages, context, model)
-                        else:
-                            response = model.generate_content(gemini_messages)
-                            reply_text = response.text
-                        break
-                    except Exception as e:
-                        user_data["isinprocess"] = False
-                        traceback.print_exc()
-                        logger.error(f"Exception occurred: {e}. Retrying...")
-                        time.sleep(1)
+                try:
+                    if context["stream"]:
+                        response = self.stream_reply(gemini_messages, context, model)
+                    else:
+                        response = model.generate_content(gemini_messages)
+                    reply_text = response.text[:-2]
+                except Exception as e:
+                    user_data["isinprocess"] = False
+                    traceback.print_exc()
+                    logger.error(f"Exception occurred: {e}！")
+                    context.get("channel").send(Reply(ReplyType.TEXT, f"服务器繁忙，请重试！\n{e}"), context)
+                    time.sleep(1)
             # logger.debug(response)
             
 
@@ -237,7 +235,7 @@ class GoogleGeminiBot(Bot):
     
     def wrap_promo_msg(self, context, reply_text):
         credit = conf().get("sydney_credit")
-        if context["isgroup"]: 
+        if not context["stream"]: 
             reply_text += "\n\n" + str(credit).format(mode = f"语音: {context['voice']}\n流式输出: {context['stream']}\n已读通知: {context['readfb']}")
         else:
             reply_text += str(credit).format(mode = f"语音: {context['voice']}\n流式输出: {context['stream']}\n已读通知: {context['readfb']}")
@@ -277,13 +275,11 @@ class GoogleGeminiBot(Bot):
             logger.exception(e)
 
     def stream_reply(self, gemini_messages, context, model):
-        reply_text = ""
         res = model.generate_content(gemini_messages, stream=True)
         for chunk in res:
             if chunk.text:
-                reply_text += chunk.text
                 try:
-                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text), context)
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("\n", "")), context)
                 except:
-                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text), context)
-        return reply_text
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("\n", "")), context)
+        return res
