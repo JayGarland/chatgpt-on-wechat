@@ -141,8 +141,8 @@ class GoogleGeminiBot(Bot):
             logger.info(f"[Gemini] reply={reply_text}")
             self.sessions.session_reply(reply_text, session_id)
             
-            #decorate and format text, disabled this because it makes trouble when in math or code question
-            # reply_text = reply_text.replace("*", "")
+            #decorate and format text
+            reply_text = reply_text.replace("**", "#")
 
             #Critical
             if context["stream"]:
@@ -279,7 +279,7 @@ class GoogleGeminiBot(Bot):
         for chunk in res:
             if chunk.text:
                 try:
-                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("\n", "")), context)
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("\n", "").replace("**", "")), context)
                 except:
-                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("\n", "")), context)
+                    context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("\n", "").replace("**", "")), context)
         return res
