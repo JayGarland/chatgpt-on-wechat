@@ -56,28 +56,7 @@ class SydneyBot(Bot):
             session = self.sessions.session_query(query, session_id)
 
             passivereply = None
-            if self.avoid_repeat:
-                if query == self.lastquery and session_id == self.lastsession_id:#avoid responding the same question
-                    session.messages.pop()
-                    passivereply = Reply(ReplyType.INFO, f"请耐心等待，本仙女早就看到你的消息啦!\n请不要重复提问哦!\U0001F9DA \n\n重复的提问:{clip_message(self.lastquery)}...")
-                else:
-                    self.lastquery = query
-                    self.lastsession_id = session_id
-            
-            if query.lower() == "reset" or query.lower() == "resetall" or query == "清除记忆" or query == "清除所有":
-                #when execute, this closes any plugin and clears the session messages
-                if query.lower() == "reset" or query == "清除记忆":
-                    self.sessions.clear_session(session_id)
-                    passivereply = Reply(ReplyType.INFO, "记忆已清除")
-                elif query.lower() == "resetall" or query == "清除所有":
-                    self.sessions.clear_all_session()
-                    passivereply = Reply(ReplyType.INFO, "所有人记忆已清除")
-                #done when an async thread is in processing user can stop the process midway      
-                if self.current_responding_task is not None:
-                    self.current_responding_task.cancel()
-                    self.user_data["isinprocess"] = False
-            elif query == "撤销" or query == "撤回" or query.lower() == "revoke" or query.lower() == "Revoke":
-                #cancel the reply process and revoke the last conversation
+            if query == "撤销" or query == "撤回" or query.lower() == "revoke" or query.lower() == "Revoke": #cancel the reply process and revoke the last conversation
                 session.messages.pop()
                 # has_assistant_message = any("[assistant](#message)" in item.keys() for item in session.messages)
                 users_arr = [obj for obj in session.messages if "[user](#message)" in obj.keys()]
@@ -89,9 +68,6 @@ class SydneyBot(Bot):
                 if self.current_responding_task is not None:
                     self.current_responding_task.cancel()
                     self.user_data["isinprocess"] = False
-            elif query == "更新配置":
-                load_config()
-                passivereply = Reply(ReplyType.INFO, "配置已更新")
             elif query.lower() in ("zai","Zai","在？","在","在吗？","在嘛？","在么？","在吗","在嘛","在么","在吗?","在嘛?","在么?"):
                 #passiva reply if the bot is alive and also reply if reply is in process
                 try:
@@ -107,23 +83,11 @@ class SydneyBot(Bot):
             
             if context["isinprocess"]:
                 session.messages.pop()
-                self.lastquery = "" #FIXME or not..
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
             
             try:
                 logger.info("[SYDNEY] session query={}".format(session.messages))
                 reply_content = asyncio.run(self.handle_async_response(session, query, context))
-                if reply_content: 
-                    if self.failedmsg:
-                        self.failedmsg = False
-                        #match the lastquery
-                        curtusers_arr = [obj for obj in session.messages if "[user](#message)" in obj.keys()]
-                        if len(curtusers_arr) > 1:
-                            second_last_usermsg = curtusers_arr[-1]
-                            self.lastquery = list(second_last_usermsg.values())[-1]
-                        return Reply(ReplyType.INFO, reply_content)
-                # else:
-                #     return Reply(ReplyType.TEXT, reply_content)
                 
                 #load bot reply to the session messages
                 self.sessions.session_reply(reply_content, session_id)
@@ -139,7 +103,7 @@ class SydneyBot(Bot):
                 if self.suggestions != "" and self.enablesuggest:
                     reply_content = reply_content + "\n\n----------回复建议------------\n" + self.suggestions
                 
-                if len(session.messages) == 2: #Optional, this is for promoting 
+                if len(session.messages) == 2: #This is for promoting 
                     #when in voiceon mode, the voice output will be disabled at this time
                     try:
                         #when stream, no need add whitespaces
@@ -170,18 +134,6 @@ class SydneyBot(Bot):
                 self.lastquery = None
                 self.user_data["isinprocess"] = False
                 return Reply(ReplyType.INFO, f"我脑壳短路了一下, Sorry!\U0001F64F\n\nDebugg Info:\n{e}")
-            
-        # #todo IMAGE_CREATE    
-        # elif context.type == ContextType.IMAGE_CREATE:
-        #     ok, res = self.create_img(query, 0)
-        #     if ok:
-        #         reply = Reply(ReplyType.IMAGE_URL, res)
-        #     else:
-        #         reply = Reply(ReplyType.ERROR, res)
-        #     return reply
-        # else:
-        #     reply = Reply(ReplyType.ERROR, "Bot不支持处理{}类型的消息".format(context.type))
-        #     return reply
     
     async def handle_async_response(self, session, query, context):
         self.current_responding_task = asyncio.ensure_future(self._chat(session, query, context))
