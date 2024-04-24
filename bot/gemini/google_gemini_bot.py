@@ -61,30 +61,6 @@ class GoogleGeminiBot(Bot):
             session = self.sessions.session_query(query, session_id)
             # logger.info(session.messages)
             
-            #passive reply
-            reply = None
-            if query == "killprocess":
-                user_data["isinprocess"] = False
-                self.sessions.clear_session(session_id)
-                reply = Reply(ReplyType.INFO, "进程已清除")
-            elif query == "#清除所有":
-                self.sessions.clear_all_session()
-                reply = Reply(ReplyType.INFO, "所有人记忆已清除")
-            elif query == "#更新配置": 
-                #TODO when use this, bot in particular group chat will switch persona
-                reply = Reply(ReplyType.INFO, "配置已更新")
-            elif query == "撤销" or query == "撤回" or query.lower() == "revoke":
-                session.messages.pop()
-                users_arr = [obj for obj in session.messages if obj['role'] == 'user']
-                if len(users_arr) < 1:
-                    passivereply = Reply(ReplyType.INFO, "没有可撤回的消息!")
-                    return passivereply
-                session.messages = session.messages[:list(session.messages).index(users_arr[-1])]#FIXME, canceled unexpected multiple lines
-                cliped_msg = clip_message(users_arr[-1]['content'])
-                reply = Reply(ReplyType.INFO, f"该条消息已撤销!\nThe previous message is cancelled. \n\n({cliped_msg})")
-            if reply:
-                return reply
-            
             if context["isinprocess"]:
                 session.messages.pop()
                 return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
@@ -98,11 +74,8 @@ class GoogleGeminiBot(Bot):
                 user_data["imgdone"] = False
             
             #construct gemini_messages
-            if session.keeprole:# when roleplay, then no bot statement
-                persona = session.system_prompt
-            else:
-                persona, pre_reply = self.init_prompt_botstatement(context)
-            model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=SAFETY_SETTINGS, system_instruction=persona)
+            system_prompt, pre_reply = self.init_prompt_botstatement(context, session)
+            model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=SAFETY_SETTINGS, system_instruction=system_prompt)
             gemini_messages = self._convert_to_gemini_messages(GoogleGeminiBot.filter_messages(session.messages))
             logger.info(gemini_messages)
             
@@ -111,7 +84,7 @@ class GoogleGeminiBot(Bot):
             img_cache = memory.USER_IMAGE_CACHE.get(session_id)
             if img_cache:
                 img = self.process_img(session_id, img_cache)
-                persona, noused_prereply = self.init_prompt_botstatement(context)
+                persona, noused_prereply = self.init_prompt_botstatement(context, session)
                 query = persona + f"\n\n[user](#message)\n{query}"
                 img_model = genai.GenerativeModel("gemini-1.0-pro-vision-latest", safety_settings=SAFETY_SETTINGS)
                 gemini_messages_img = [query, img]
@@ -212,7 +185,7 @@ class GoogleGeminiBot(Bot):
         # logger.info(res)
         return res
     
-    def init_prompt_botstatement(self, context):
+    def init_prompt_botstatement(self, context, session):
         persona = None
         pre_reply = None
         
@@ -225,7 +198,7 @@ class GoogleGeminiBot(Bot):
                     conf().__setitem__("voicespecies", "zh-CN-YunyangNeural")
                     break
         if not persona:
-            persona = conf().get("character_desc")
+            persona = session.system_prompt
             pre_reply = conf().get("pre_reply")
             self.bot_statement = conf().get("sydney_statement")
             conf().__setitem__("voicespecies", "zh-CN-XiaoxiaoNeural") #zh-CN-XiaoxiaoNeural optional, more matual
