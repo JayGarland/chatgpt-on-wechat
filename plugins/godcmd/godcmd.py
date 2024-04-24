@@ -88,6 +88,10 @@ COMMANDS = {
     "switchreadfb":{
         "alias": ["switchreadfb"],
         "desc": "switch the read notification."
+    },
+    "recall":{
+        "alias": ["recall", "撤回"],
+        "desc": "recall the last msg and bot reply"
     }
 }
 
@@ -203,7 +207,7 @@ def get_help_text(isadmin, isgroup):
     version="1.0",
     author="lanvent",
 )
-class Godcmd(Plugin):
+class Godcmd(Plugin):#TODO assign persona from the front end and by administrator, and also after this operation, the role will keep until rescan the qr code to login
     def __init__(self):
         super().__init__()
 
@@ -376,6 +380,11 @@ class Godcmd(Plugin):
                     else:
                         user_data["readfb"] = True
                         ok, result = True, f"The read feedback has been enabled!"
+                elif cmd == "recall":
+                    user_data = conf().get_user_data(user)
+                    if e_context["context"]:
+                        poped_msg = bot.sessions.del_query(session_id)
+                        ok, result = True, f"撤回的消息为：{poped_msg}"
                 logger.debug("[Godcmd] command: %s by %s" % (cmd, user))
             elif any(cmd in info["alias"] for info in ADMIN_COMMANDS.values()):
                 if isadmin:
