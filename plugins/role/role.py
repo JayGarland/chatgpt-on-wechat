@@ -26,11 +26,7 @@ class RolePlay:
 
     def action(self, user_action):
         session = self.bot.sessions.build_session(self.sessionid)
-        try:#this is eclusive for Geminisession
-            keeprole = session.keeprole
-        except:
-            pass
-        if session.system_prompt != self.desc or not keeprole:
+        if session.system_prompt != self.desc:
             session.set_system_prompt(self.desc)
         prompt = self.wrapper % user_action
         return prompt
