@@ -72,7 +72,7 @@ class ChatChannel(Channel):
             if context["imgdone"] is None:
                 context["imgdone"] = False
             if context["readfb"] is None:
-                context["readfb"] = True
+                context["readfb"] = False
             if context.get("isgroup", False):
                 group_name = cmsg.other_user_nickname
                 group_id = cmsg.other_user_id
