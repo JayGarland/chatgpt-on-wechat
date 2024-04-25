@@ -12,25 +12,33 @@ from bridge.context import ContextType, Context
 from bridge.reply import Reply, ReplyType
 from common.log import logger
 from config import conf
-from bot.gemini.llm import SAFETY_SETTINGS, genai
 from bot.gemini.utils import *
 from PIL import Image
 from common import memory
 import io
 import time
 import traceback
-
+from google.generativeai.types.safety_types import HarmCategory, HarmBlockThreshold
+import google.generativeai as genai
+import random
 
 
 
 # OpenAI对话模型API (可用)
 class GoogleGeminiBot(Bot):
+    SAFETY_SETTINGS = {
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+    }
     def __init__(self):
         super().__init__()
         self.sessions = GeminiSessionManager(GeminiSession, model=conf().get("model"))
         self.bot_statement = str("")
 
     def reply(self, query: str, context: Context = None) -> Reply:
+        GoogleGeminiBot.GeminiApiConfig()
         user_data = conf().get_user_data(context["receiver"])
         try:
             if context.type != ContextType.TEXT:
@@ -75,7 +83,7 @@ class GoogleGeminiBot(Bot):
             
             #construct gemini_messages
             system_prompt, pre_reply = self.init_prompt_botstatement(context, session)
-            model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=SAFETY_SETTINGS, system_instruction=system_prompt)
+            model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=GoogleGeminiBot.SAFETY_SETTINGS, system_instruction=system_prompt)
             gemini_messages = self._convert_to_gemini_messages(GoogleGeminiBot.filter_messages(session.messages))
             logger.info(gemini_messages)
             
@@ -86,7 +94,7 @@ class GoogleGeminiBot(Bot):
                 img = self.process_img(session_id, img_cache)
                 persona, noused_prereply = self.init_prompt_botstatement(context, session)
                 query = persona + f"\n\n[user](#message)\n{query}"
-                img_model = genai.GenerativeModel("gemini-1.0-pro-vision-latest", safety_settings=SAFETY_SETTINGS)
+                img_model = genai.GenerativeModel("gemini-1.0-pro-vision-latest", safety_settings=GoogleGeminiBot.SAFETY_SETTINGS)
                 gemini_messages_img = [query, img]
                 if context["stream"]:
                     reply_text = self.stream_reply(gemini_messages_img, context, img_model)
@@ -256,3 +264,13 @@ class GoogleGeminiBot(Bot):
                 except:
                     context.get("channel").send(Reply(ReplyType.TEXT, chunk.text.replace("\n", "").replace("**", "")), context)
         return res
+    
+    @staticmethod
+    def GeminiApiConfig():
+        keys = conf().get("gemini_api_key")
+        keys = keys.split("|")
+        keys = [key.strip() for key in keys]
+        if not keys:
+            raise Exception("Please set a valid API key in Config!")
+        api_key = random.choice(keys)
+        genai.configure(api_key=api_key)
