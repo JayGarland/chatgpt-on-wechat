@@ -113,7 +113,7 @@ class GoogleGeminiBot(Bot):
                     user_data["isinprocess"] = False
                     traceback.print_exc()
                     logger.error(f"Exception occurred: {e}！")
-                    context.get("channel").send(Reply(ReplyType.TEXT, f"服务器繁忙，请重试！\n{e}"), context)
+                    context.get("channel").send(Reply(ReplyType.TEXT, f"服务器繁忙，请重试!"), context)
                     time.sleep(1)
             # logger.debug(response)
             
