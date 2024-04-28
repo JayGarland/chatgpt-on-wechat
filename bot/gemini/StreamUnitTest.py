@@ -47,14 +47,63 @@ def ConstructQueries(chatHistory: list):
         ]
     return chatHistory
 
+def generate_new_chathistory():
+    # 如果文件不存在，创建 "chatHistories" 文件夹（如果不存在）并返回文件路径
+    os.makedirs(dir_path, exist_ok=True)
+
+    i = 1
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    dir_path = os.path.join(current_dir, "chatHistories")
+    # 循环查找可用的文件名
+    while True:
+        file_path = os.path.join(dir_path, f"chatHistory[{i}].json")
+        if not os.path.exists(file_path):
+            return file_path
+        i += 1
+
+def load_from_latestchat():
+    os.makedirs(dir_path, exist_ok=True)
+
+    i = 1
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    dir_path = os.path.join(current_dir, "chatHistories")
+    file_path = os.path.join(dir_path, f"chatHistory[{i}].json")
+    # 循环查找可用的文件名
+    while True:
+        if os.path.exists(file_path):
+            return file_path
+        i += 1
+        file_path = os.path.join(dir_path, f"chatHistory[{i}].json")
+
+def present_chathistory(chatHistory):
+    for message in chatHistory:
+        role = message['role']
+        text = message['parts'][0]['text']
+        print(f"{role.upper()}:")
+        print(text)
+        print("-" * 20)  # 添加分隔线
+
+
 if __name__ == "__main__":
-    chatHistory = []
+    i = 1
+    print("DO YOU WANT TO CRAETE A NEW CONVERSATION?(yes or no)")
+    option = input().lower()
+    if option == "yes":
+        file_path = generate_new_chathistory()
+        chatHistory = []
+    elif option == "no":
+        file_path = load_from_latestchat()
+        chatHistory = json.loads(open(file_path, encoding="utf-8").read())
+        present_chathistory(chatHistory)
+    else:
+        print("FuCkYoU!")
+        raise Exception("you should stop doing this, because what you did is fucking disappointing.")
     while True:
         GeminiConfig()
         model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=SAFETY_SETTINGS, system_instruction=system_prompt)
-        print("UserInput:")
+        print("USER:")
         chatHistory = ConstructQueries(chatHistory)
-        print("Bot: ")
+        print("MODEL:")
         try:
             res = model.generate_content(chatHistory, stream=True)
         except exceptions:
@@ -70,3 +119,5 @@ if __name__ == "__main__":
                 "parts": [{"text": res.text}]
             },
         )
+        with open(file_path, 'w', encoding= "utf-8") as f:
+            json.dump(chatHistory, f, indent=4, ensure_ascii=False) 
