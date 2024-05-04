@@ -220,7 +220,10 @@ class GoogleGeminiBot(Bot):
             reply_text += "\n\n" + str(credit).format(mode = f"语音: {context['voice']}\n流式输出: {context['stream']}\n已读通知: {context['readfb']}")
         else:
             reply_text += str(credit).format(mode = f"语音: {context['voice']}\n流式输出: {context['stream']}\n已读通知: {context['readfb']}")
-        qridimg = open('.\wechatID.jpg', 'rb')
+        try:
+            qridimg = open('.\wechatID.jpg', 'rb')
+        except:
+            pass
         try:
             context.get("channel").send(Reply(ReplyType.TEXT, reply_text), context)
             return Reply(ReplyType.IMAGE, qridimg)
