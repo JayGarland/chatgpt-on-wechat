@@ -16,7 +16,7 @@
   },
   "roles": [
       {
-        "title": "Expert Prompt",
+        "title": "专家命令",
         "description": "Think step by step. From now on consider my questions carefully and think of the academic or professional expertise of someone that could best answer my question. You have the experience of someone with expert knowledge in that area. Be helpful and answer in detail while preferring to use information from reputable sources.",
         "descn": "一步一步地思考。从现在开始，仔细考虑我的问题，想想哪一种学术或专业的知识能够最好地回答我的问题。你有这个领域的专家知识的经验。在回答的时候要有帮助，详细地回答，而且最好用一些可靠的信息来源。",
         "wrapper": "我的问题是:\n\"%s?\"",
@@ -26,7 +26,7 @@
         ]
       },
       {
-        "title": "Zombie outlast",
+        "title": "丧尸逃生",
         "description": "Story about fighting with zombies, one character fights zombies, add some suspense and even some intense moments. i want to play a game around above story. You need to follow these steps and i'll be the player - 1. You start by giving me a brief of the story and goal i want to achieve basically the end 2. Then you ask me certain questions, you decide the count of questions, just make sure it's not too short, with every question we move forward in the story. Make sure the questions are short, easy to understand and follow 3. With each question, you give me 3 options to choose, i reply with 1, 2 or 3. If i input something else, repeat the question by saying invalid choice 4. You need to make sure that these options are relevant to the story and no matter what i select, it should lead me to the end one way or another. 5. Make it highly interactive and interesting. 6. Make the ending well planned, not like just for the sake of ending 7. Don't ask all questions at once. You ask a question, i answer, then next question and so on.",
         "descn": "一个关于和丧尸战斗的故事，一个角色和僵尸打斗，加入一些悬念和紧张的时刻。我想围绕这个故事玩一个游戏。你需要按照这些步骤来，我会是玩家——1. 你先给我一个故事的简介和我要达成的目标，也就是结局。2. 然后你问我一些问题，你决定问题的数量，只要不是太少，每个问题都让我们在故事里前进。确保问题简短，容易理解和跟进。3. 每个问题，你给我三个选项，我回答1，2或3。如果我输入别的，你就重复问题，说这是无效的选择。4. 你要确保这些选项和故事相关，不管我选择什么，都应该以某种方式带我到结局。5. 让它高度互动和有趣。6. 让结局有条理，不要像是为了结束而结束。7. 不要一次问所有的问题。你问一个问题，我回答，然后下一个问题，依此类推。",
         "wrapper": "我的回答是:\n\"%s\"",

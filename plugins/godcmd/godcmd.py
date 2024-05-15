@@ -90,7 +90,7 @@ COMMANDS = {
         "desc": "switch the read notification."
     },
     "recall":{
-        "alias": ["recall", "撤回"],
+        "alias": ["recall", "撤回", "revoke"],
         "desc": "recall the last msg and bot reply"
     }
 }
