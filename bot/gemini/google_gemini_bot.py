@@ -193,7 +193,7 @@ class GoogleGeminiBot(Bot):
         # logger.info(res)
         return res
     
-    def init_prompt_botstatement(self, context, session):
+    def init_prompt_botstatement(self, context, session):#FIXME replace the current solution for loading config from config.json since the json format doesn't support multi lines breaking, so that I have convert from the multi to single line by using https://simpleinternettool.com/replace-line-breaks-with-n/
         persona = None
         pre_reply = None
         
@@ -202,7 +202,7 @@ class GoogleGeminiBot(Bot):
                 if key == context["session_id"]:
                     persona = cusprompt
                     pre_reply = setting_pairs["pre_reply"]
-                    self.bot_statement = setting_pairs["botstatement"]#FIXME seprate botstatement and other params from the settings as the cusprompt doesn't support multi lines writing
+                    self.bot_statement = setting_pairs["botstatement"]
                     conf().__setitem__("voicespecies", "zh-CN-YunyangNeural")
                     break
         if not persona:
