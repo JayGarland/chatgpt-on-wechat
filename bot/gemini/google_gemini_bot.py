@@ -218,7 +218,7 @@ class GoogleGeminiBot(Bot):
         try:
             qridimg = open('.\wechatID.jpg', 'rb')
         except:
-            pass
+            qridimg = None
         try:
             context.get("channel").send(Reply(ReplyType.TEXT, reply_text), context)
             return Reply(ReplyType.IMAGE, qridimg)
