@@ -210,11 +210,8 @@ class GoogleGeminiBot(Bot):
         return persona, pre_reply
     
     def wrap_promo_msg(self, context, reply_text):
-        credit = conf().get("sydney_credit")
-        if not context["stream"]: 
-            reply_text += "\n\n" + str(credit).format(mode = f"语音: {context['voice']}\n流式输出: {context['stream']}\n已读通知: {context['readfb']}")
-        else:
-            reply_text += str(credit).format(mode = f"语音: {context['voice']}\n流式输出: {context['stream']}\n已读通知: {context['readfb']}")
+        credit = conf().get("sydney_credit") 
+        reply_text += "\n\n" + str(credit).format(mode = f"语音: {context['voice']}\n流式输出: {context['stream']}\n已读通知: {context['readfb']}")
         try:
             qridimg = open('.\wechatID.jpg', 'rb')
         except:
