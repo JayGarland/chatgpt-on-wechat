@@ -69,10 +69,6 @@ class GoogleGeminiBot(Bot):
             session = self.sessions.session_query(query, session_id)
             # logger.info(session.messages)
             
-            if context["isinprocess"]:
-                session.messages.pop()
-                return Reply(ReplyType.TEXT, "该问题无效!请等待!\n因为当前还有未处理完的回复!")
-            
             # session = self.sessions.session_query(query, session_id)
             # logger.debug(session.messages[-1]['content'])
             
@@ -83,7 +79,6 @@ class GoogleGeminiBot(Bot):
             logger.info(gemini_messages)
             
             # reply generate process
-            user_data["isinprocess"] = True
             img_cache = memory.USER_IMAGE_CACHE.get(session_id)
             if img_cache:
                 img = self.process_img(session_id, img_cache)
@@ -104,7 +99,6 @@ class GoogleGeminiBot(Bot):
                         response = model.generate_content(gemini_messages)
                     reply_text = response.text[:-2]
                 except Exception as e:
-                    user_data["isinprocess"] = False
                     traceback.print_exc()
                     logger.error(f"Exception occurred: {e}！")
                     # context.get("channel").send(Reply(ReplyType.TEXT, f"服务器繁忙，请重试!"), context)
@@ -131,7 +125,6 @@ class GoogleGeminiBot(Bot):
                 else:
                     reply_text += self.bot_statement
             #return reply
-            user_data["isinprocess"] = False
             if len(session.messages) == 3 and not context["voice"]:
                 return self.wrap_promo_msg(context, reply_text)
             return Reply(ReplyType.TEXT, reply_text)
@@ -139,7 +132,6 @@ class GoogleGeminiBot(Bot):
             traceback.print_exc()
             logger.error("[Gemini] fetch reply error, may contain unsafe content")
             logger.error(e)
-            user_data["isinprocess"] = False
             return Reply(ReplyType.INFO, f"我脑壳短路了一下，Sorry！\U0001F64F \n\nDebug Info:\n{e}")
 
     def _convert_to_gemini_messages(self, messages: list):
