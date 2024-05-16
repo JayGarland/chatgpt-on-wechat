@@ -82,15 +82,14 @@ class GoogleGeminiBot(Bot):
             img_cache = memory.USER_IMAGE_CACHE.get(session_id)
             if img_cache:
                 img = self.process_img(session_id, img_cache)
-                persona, noused_prereply = self.init_prompt_botstatement(context, session)
-                query = persona + f"\n\n[user](#message)\n{query}"
-                img_model = genai.GenerativeModel("gemini-1.0-pro-vision-latest", safety_settings=GoogleGeminiBot.SAFETY_SETTINGS)
+                system_prompt, noused_prereply = self.init_prompt_botstatement(context, session)
+                img_model = genai.GenerativeModel("gemini-1.5-flash-latest", safety_settings=GoogleGeminiBot.SAFETY_SETTINGS, system_instruction=system_prompt)
                 gemini_messages_img = [query, img]
                 if context["stream"]:
-                    reply_text = self.stream_reply(gemini_messages_img, context, img_model)
+                    response = self.stream_reply(gemini_messages_img, context, img_model)
                 else:
                     response = img_model.generate_content(gemini_messages_img) #when use the vision no persona
-                    reply_text = response.text
+                reply_text = response.text
             else:
                 try:
                     if context["stream"]:
