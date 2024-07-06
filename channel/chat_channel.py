@@ -255,7 +255,7 @@ class ChatChannel(Channel):
                     "path": context.content,
                     "msg": context.get("msg")
                 }
-                self._send_reply(context, Reply(ReplyType.TEXT, "图片看到啦！📸\n请向我提问吧!💕"))
+                # self._send_reply(context, Reply(ReplyType.TEXT, "图片看到啦！📸\n请向我提问吧!💕"))
                 logger.info(memory.USER_IMAGE_CACHE[context["session_id"]])
             elif context.type == ContextType.SHARING:  # 分享信息，当前无默认逻辑
                 logger.info(context.content)
