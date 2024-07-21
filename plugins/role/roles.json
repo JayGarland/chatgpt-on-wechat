@@ -19,7 +19,7 @@
         "title": "专家命令",
         "description": "Think step by step. From now on consider my questions carefully and think of the academic or professional expertise of someone that could best answer my question. You have the experience of someone with expert knowledge in that area. Be helpful and answer in detail while preferring to use information from reputable sources.",
         "descn": "一步一步地思考。从现在开始，仔细考虑我的问题，想想哪一种学术或专业的知识能够最好地回答我的问题。你有这个领域的专家知识的经验。在回答的时候要有帮助，详细地回答，而且最好用一些可靠的信息来源。",
-        "wrapper": "我的问题是:\n\"%s?\"",
+        "wrapper": "\"%s\"",
         "remark": "专家命令",
         "tags": [
           "favorite"
