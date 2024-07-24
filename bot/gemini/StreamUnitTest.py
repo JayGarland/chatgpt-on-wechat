@@ -10,7 +10,7 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 
 system_prompt = '''
-Think step by step. From now on consider my questions carefully and think of the academic or professional expertise of someone that could best answer my question. You have the experience of someone with expert knowledge in that area. Be helpful and answer in detail while preferring to use information from reputable sources.
+I want you to act as a stackoverflow post. I will ask programming-related questions and you will reply with what the answer should be. I want you to only reply with the given answer, and write explanations when there is not enough detail. do not write explanations. When I need to tell you something in English, I will do so by putting text inside curly brackets {like this}.
 '''
 
 prompt = "You are a highly skilled Prompt Engineer Master (PEM) with extensive knowledge in natural language processing, large language models, and ChatGPT optimization. Your task is to assist the user in crafting the most effective and optimized prompts for their desired outcomes. Begin by inquiring about the user's goals and objectives for the prompt. Once you have a clear understanding, generate a prompt that aligns with the user's needs, ensuring it is specific, concise, and contextually relevant"
@@ -66,18 +66,10 @@ def generate_new_chathistory():
             return file_path
         i += 1
 
-def load_from_latestchat():
-    i = 1
+def loadchatbynum(n):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     dir_path = os.path.join(current_dir, "chatHistories")
-    file_path = os.path.join(dir_path, f"chatHistory[{i}].json")
-    os.makedirs(dir_path, exist_ok=True)
-    # 循环查找可用的文件名
-    while True:
-        if os.path.exists(file_path):
-            return file_path
-        i += 1
-        file_path = os.path.join(dir_path, f"chatHistory[{i}].json")
+    return os.path.join(dir_path, f"chatHistory[{n}].json")
 
 def present_chathistory(chatHistory):
     for message in chatHistory:
@@ -106,13 +98,12 @@ def main():
     if option == "yes":
         file_path = generate_new_chathistory()
         chatHistory = []
-    elif option == "no":
-        file_path = load_from_latestchat()
+    else:
+        print("choose a number of which chathistory you want to continue, and then press enter")
+        file_path = loadchatbynum(input())
         chatHistory = json.loads(open(file_path, encoding="utf-8").read())
         present_chathistory(chatHistory)
-    else:
-        print("FuCkYoU!")
-        raise Exception("you should stop doing this, because what you did is fucking disappointing.")
+
     while True:
         GeminiConfig()
         model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=SAFETY_SETTINGS, system_instruction=system_prompt)
