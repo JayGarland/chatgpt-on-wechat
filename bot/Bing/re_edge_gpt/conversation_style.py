@@ -9,67 +9,89 @@ from typing import Optional
 
 class ConversationStyle(Enum):
     creative = [
-        "fluxsydney",
-        "nojbf",
+        "nlu_direct_response_filter",
+        "deepleo",
+        "disable_emoji_spoken_text",
+        "responsible_ai_policy_235",
+        "enablemm",
+        "dv3sugg",
+        "autosave",
         "iyxapbing",
         "iycapbing",
-        "dgencontentv3",
-        "nointernalsugg",
-        "disable_telemetry",
-        "machine_affinity",
-        "streamf",
-        "codeint",
-        "langdtwb",
-        "fdwtlst",
-        "fluxprod",
-        "eredirecturl",
-        "deuct3",
-        # "nosearchall"
+        "h3imaginative",
+        "clgalileo",
+        "gencontentv3",
+        "uquopt",
+        "sunoupsell",
+        "gndlogcf",
+        "flxvsearch",
+        "noknowimg",
+        "eredirecturl"
+    ]
+    creative_classic = [
+        "nlu_direct_response_filter",
+        "deepleo",
+        "disable_emoji_spoken_text",
+        "responsible_ai_policy_235",
+        "enablemm",
+        "dv3sugg",
+        "autosave",
+        "iyxapbing",
+        "iycapbing",
+        "h3imaginative",
+        "clgalileo",
+        "gencontentv3",
+        "uquopt",
+        "sunoupsell",
+        "gndlogcf",
+        "flxvsearch",
+        "noknowimg",
+        "eredirecturl"
     ]
     balanced = [
-        "fluxsydney",
-		"nojbf", # no jailbreak filter
-		"iyxapbing",
-		"iycapbing",
-		"dgencontentv3",
-		"nointernalsugg",
-		"disable_telemetry",
-		"machine_affinity",
-		"streamf",
-		"langdtwb",
-		"fdwtlst",
-		"fluxprod",
-		"eredirecturl",
-		"gptvnodesc",  # may related to image search
-		"gptvnoex",    # may related to image search
-		"codeintfile", # code interpreter + file uploader
-		"sdretrieval", # retrieve upload file
-		"gamaxinvoc",  # file reader invocation
-		"ldsummary",   # our guess: long document summary
-		"ldqa",        # our guess: long document quality assurance
-        "galileo",
-        "gldcl1p",
-        "gpt4tmncnp",
-    ]
-    precise = [
-        "fluxsydney",
-        "nojbf",
+        "nlu_direct_response_filter",
+        "deepleo",
+        "disable_emoji_spoken_text",
+        "responsible_ai_policy_235",
+        "enablemm",
+        "dv3sugg",
+        "autosave",
         "iyxapbing",
         "iycapbing",
-        "dgencontentv3",
-        "nointernalsugg",
-        "disable_telemetry",
-        "machine_affinity",
-        "streamf",
-        "codeint",
-        "langdtwb",
-        "fdwtlst",
-        "fluxprod",
-        "eredirecturl",
-        "deuct3",
-        # Precise
+        "enable_user_consent",
+        "fluxmemcst",
+        "galileo",
+        "saharagenconv5",
+        "dc1mncp",
+        "uquopt",
+        "sunoupsell",
+        "crkt2t",
+        "immslots",
+        "cpproname",
+        "vidtoppb",
+        "gptv1desc2",
+        "eredirecturl"
+    ]
+    precise = [
+        "nlu_direct_response_filter",
+        "deepleo",
+        "disable_emoji_spoken_text",
+        "responsible_ai_policy_235",
+        "enablemm",
+        "dv3sugg",
+        "autosave",
+        "iyxapbing",
+        "iycapbing",
+        "enable_user_consent",
+        "fluxmemcst",
         "h3precise",
-        "gpt4tmncnp",
+        "clgalileo",
+        "uquopt",
+        "sunoupsell",
+        "crkt2t",
+        "flxvsearchans",
+        "noknowimg",
+        "eredirecturl"
     ]
 
 
