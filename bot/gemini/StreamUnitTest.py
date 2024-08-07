@@ -1,5 +1,3 @@
-
-import google.generativeai as genai
 from google.generativeai.types.safety_types import HarmCategory, HarmBlockThreshold
 from google.api_core import exceptions
 import random
@@ -22,17 +20,40 @@ system_prompt = '''
 Think step by step. From now on consider my questions carefully and think of the academic or professional expertise of someone that could best answer my question. You have the experience of someone with expert knowledge in that area. Be helpful and answer in detail while preferring to use information from reputable sources.'''
 
 
-def GeminiConfig():
+def APIConfig(modelname):
     file_path = os.path.abspath("config.json")
     with open(file_path, encoding="utf-8") as f:
         config = json.load(f)
-    keys = config["gemini_api_key"]
+    if modelname == "GEMINI": 
+        keys = config["gemini_api_key"]
+    elif modelname == "COHERE":
+        keys = config["cohere_api_key"]
     keys = keys.split("|")
     keys = [key.strip() for key in keys]
     if not keys:
         raise Exception("Please set a valid API key in Config!")
     api_key = random.choice(keys)
-    genai.configure(api_key=api_key)
+    if modelname == "GEMINI":
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=SAFETY_SETTINGS, system_instruction=system_prompt)
+    elif modelname == "COHERE":
+        from cohere.client import Client
+        model = Client(api_key)
+    return model, modelname
+
+def modelConfig():
+    print("Please select an AI model to continue(1.Gemini 2.Cohere)")
+    option = input()
+    if option == "1":
+        model, modelname = APIConfig("GEMINI")
+    elif option == "2":
+        model, modelname = APIConfig("COHERE")
+    else:
+        print("please select a valid number and press enter")
+        modelConfig()
+    return model, modelname
+
 
 SAFETY_SETTINGS = {
     HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
@@ -58,6 +79,21 @@ def ConstructQueries(chatHistory: list):
             },
         ]
     return chatHistory
+
+def CohereHistoryTrans(chatHistory: list):
+    CohereChatHistory = []
+    for query in chatHistory:
+        if query["role"] == "model":
+            role = "CHATBOT"
+        else:
+            role = query["role"]
+        parts = query["parts"][0]["text"]
+        CohereChatHistory.append({
+            "role": role.upper(),
+            "message": parts
+        })
+    return CohereChatHistory
+
 
 def generate_new_chathistory():
     i = 1
@@ -97,7 +133,6 @@ def multiline_input():
     return text
 
 def main():
-    print("Initializing...")
     print("NOTICE! Enter `alt+enter` to send a message!")
     print("DO YOU WANT TO CRAETE A NEW CONVERSATION?(yes or no)")
     option = input().lower()
@@ -109,30 +144,48 @@ def main():
         file_path = loadchatbynum(input())
         chatHistory = json.loads(open(file_path, encoding="utf-8").read())
         present_chathistory(chatHistory)
+    
+    model, modelname = modelConfig()
 
     while True:
-        GeminiConfig()
-        model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=SAFETY_SETTINGS, system_instruction=system_prompt)
-        print("USER:")
-        chatHistory = ConstructQueries(chatHistory)
-        print("MODEL:")
-        try:
-            res = model.generate_content(chatHistory, stream=True)
-        except exceptions:
-            print("Server is busy, retrying...")
-            time.sleep(3)
-            res = model.generate_content(chatHistory, stream=True)
-        for chunk in res:
-            if chunk.text:
-                print(chunk.text, end="", flush=True)
-        chatHistory.append(
-            {
-                "role": "model",
-                "parts": [{"text": res.text}]
-            },
-        )
-        with open(file_path, 'w', encoding= "utf-8") as f:
-            json.dump(chatHistory, f, indent=4, ensure_ascii=False) 
+        print("\nUSER:")
+        if modelname == "GEMINI":
+            chatHistory = ConstructQueries(chatHistory)
+            print("MODEL:")
+            try:
+                res = model.generate_content(chatHistory, stream=True)
+            except exceptions:
+                print("Server is busy, retrying...")
+                time.sleep(3)
+                res = model.generate_content(chatHistory, stream=True)
+            for chunk in res:
+                if chunk.text:
+                    print(chunk.text, end="", flush=True)
+            chatHistory.append(
+                {
+                    "role": "model",
+                    "parts": [{"text": res.text}]
+                },
+            )
+            with open(file_path, 'w', encoding= "utf-8") as f:
+                json.dump(chatHistory, f, indent=4, ensure_ascii=False)
+        elif modelname == "COHERE":
+            CoherechatHistory = CohereHistoryTrans(ConstructQueries(chatHistory))
+            message = CoherechatHistory[-1]["message"]
+            res = model.chat_stream(chat_history=CoherechatHistory, preamble = system_prompt, message = message)
+            print("MODEL:")
+            for chunk in res:
+                if chunk.event_type == "text-generation":
+                    print(chunk.text, end="", flush=True)
+                if chunk.event_type == "stream-end":
+                    chatHistory.append(
+                        {
+                            "role": "model",
+                            "parts": [{"text": chunk.response.text}]
+                        },
+                    )
+            with open(file_path, 'w', encoding= "utf-8") as f:
+                json.dump(chatHistory, f, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
