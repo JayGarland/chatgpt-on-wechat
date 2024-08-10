@@ -241,7 +241,7 @@ class GoogleGeminiBot(Bot):
         except Exception as e:
             logger.exception(e)
 
-    def stream_reply(self, gemini_messages, context, model):
+    def stream_reply(self, gemini_messages, context, model: genai.GenerativeModel):
         res = model.generate_content(gemini_messages, stream=True)
         for chunk in res:
             if chunk.text:
