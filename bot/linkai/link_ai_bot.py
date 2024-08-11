@@ -122,7 +122,8 @@ class LinkAIBot(Bot):
             headers = {"Authorization": "Bearer " + linkai_api_key}
 
             # do http request
-            res = requests.post(url=self.base_url + "/chat/completions", json=body, headers=headers,
+            base_url = conf().get("linkai_api_base", "https://api.link-ai.tech")
+            res = requests.post(url=base_url + "/v1/chat/completions", json=body, headers=headers,
                                 timeout=conf().get("request_timeout", 180))
             if res.status_code == 200:
                 # execute success
@@ -260,7 +261,7 @@ class LinkAIBot(Bot):
             headers = {"Authorization": "Bearer " + conf().get("linkai_api_key")}
 
             # do http request
-            base_url = conf().get("linkai_api_base", "https://api.link-ai.chat")
+            base_url = conf().get("linkai_api_base", "https://api.link-ai.tech")
             res = requests.post(url=base_url + "/v1/chat/completions", json=body, headers=headers,
                                 timeout=conf().get("request_timeout", 180))
             if res.status_code == 200:
@@ -303,7 +304,7 @@ class LinkAIBot(Bot):
     def _fetch_app_info(self, app_code: str):
         headers = {"Authorization": "Bearer " + conf().get("linkai_api_key")}
         # do http request
-        base_url = conf().get("linkai_api_base", "https://api.link-ai.chat")
+        base_url = conf().get("linkai_api_base", "https://api.link-ai.tech")
         params = {"app_code": app_code}
         res = requests.get(url=base_url + "/v1/app/info", params=params, headers=headers, timeout=(5, 10))
         if res.status_code == 200:
@@ -325,7 +326,7 @@ class LinkAIBot(Bot):
                 "response_format": "url",
                 "img_proxy": conf().get("image_proxy")
             }
-            url = conf().get("linkai_api_base", "https://api.link-ai.chat") + "/v1/images/generations"
+            url = conf().get("linkai_api_base", "https://api.link-ai.tech") + "/v1/images/generations"
             res = requests.post(url, headers=headers, json=data, timeout=(5, 90))
             t2 = time.time()
             image_url = res.json()["data"][0]["url"]
@@ -398,6 +399,7 @@ class LinkAIBot(Bot):
             return
         max_send_num = conf().get("max_media_send_count")
         send_interval = conf().get("media_send_interval")
+        file_type = (".pdf", ".doc", ".docx", ".csv", ".xls", ".xlsx", ".txt", ".rtf", ".ppt", ".pptx")
         try:
             i = 0
             for url in image_urls:
@@ -406,7 +408,7 @@ class LinkAIBot(Bot):
                 i += 1
                 if url.endswith(".mp4"):
                     reply_type = ReplyType.VIDEO_URL
-                elif url.endswith(".pdf") or url.endswith(".doc") or url.endswith(".docx") or url.endswith(".csv"):
+                elif url.endswith(file_type):
                     reply_type = ReplyType.FILE
                     url = _download_file(url)
                     if not url:

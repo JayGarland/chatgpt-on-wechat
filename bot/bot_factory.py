@@ -2,7 +2,6 @@
 channel factory
 """
 from common import const
-from common.log import logger
 
 
 def create_bot(bot_type):
@@ -70,6 +69,10 @@ def create_bot(bot_type):
     elif bot_type == const.MOONSHOT:
         from bot.moonshot.moonshot_bot import MoonshotBot
         return MoonshotBot()
+    
+    elif bot_type == const.MiniMax:
+        from bot.minimax.minimax_bot import MinimaxBot
+        return MinimaxBot()
 
 
     raise RuntimeError

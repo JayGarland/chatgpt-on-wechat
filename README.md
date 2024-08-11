@@ -1,52 +1,75 @@
 # 简介
 
-> 使用微软 Bing 搭建微信聊天机器人，支持个人微信、公众号、企业微信部署，能处理文本、docx,pdf,word 文件和图片，处理微信链接的分享，访问互联网，支持预设 prompt injection 定制专属智能助理。
-> 最新版本支持的功能如下：
+> 本项目是基于大模型的智能对话机器人，支持企业微信、微信公众号、飞书、钉钉接入，可选择 GPT3.5/GPT4.0/Claude/文心一言/讯飞星火/通义千问/Gemini/LinkAI/ChatGLM/KIMI，能处理文本、语音和图片，通过插件访问操作系统和互联网等外部资源，支持基于自有知识库定制企业 AI 应用。
 
-- [x] **多端部署：** 有多种部署方式可选择且功能完备，目前已支持个人微信、微信公众号和、企业微信、飞书等部署方式
-- [x] **基础对话：** 私聊及群聊的消息智能回复，支持多轮会话上下文记忆
-- [x] **图像能力：** 支持图片识别、图生图如照片修复(插件)
-- [x] **丰富插件：** 支持个性化插件扩展，已实现多角色切换、文字冒险、敏感词过滤、聊天记录总结、文档总结和对话等插件
-- [x] **Tool 工具：** 与互联网交互，支持最新信息搜索、数学计算、天气和资讯查询、网页总结。
-- [x] **Prompt Injection：** 绕过微软 BING 的自我审查来自定义专属机器人，可作为数字分身、智能客服使用
+最新版本支持的功能如下：
 
-> 欢迎接入更多应用，参考 [Terminal 代码](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/terminal/terminal_channel.py)实现接收和发送消息逻辑即可接入。 同时欢迎增加新的插件，参考 [插件说明文档](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins)。
-
-# Knowing issues
-
-> ~~when uploading a local storage image, server will response unexpected error with json data, which indicates unstable performance of image recognition, so it's a server exception.~~(fixed by adding an exception handle and remind to user)
-
-# Planned updates
-
-> add suffix handle of the context that bot output, such as clipping the introduction of the bot and endwords.
-
-> add exception handle when get none context from webpageinfo.
-
-> ~~向聊天中发送“内容正在生成中”， 如果当前生成内容的时间超过了 30s。~~(updated by user sends instruction to the bot and if in reply the bot will response a tip message)
-
-> ~~let's see if the tip message from bot will pollute the conversation.~~(updated by removing tip message from precontext)
-
-> ~~when one reply is in processing user can stop the generation of content immediately by sending a message, and the stopped reply won't be stored in the chat history~~
+- [x] **多端部署：** 有多种部署方式可选择且功能完备，目前已支持微信生态下公众号、企业微信应用、飞书、钉钉等部署方式
+- [x] **基础对话：** 私聊及群聊的消息智能回复，支持多轮会话上下文记忆，支持 GPT-3.5, GPT-4, Claude-3, Gemini, 文心一言, 讯飞星火, 通义千问，ChatGLM-4，Kimi(月之暗面)
+- [x] **语音能力：** 可识别语音消息，通过文字或语音回复，支持 azure, baidu, google, openai(whisper/tts) 等多种语音模型
+- [x] **图像能力：** 支持图片生成、图片识别、图生图（如照片修复），可选择 Dall-E-3, stable diffusion, replicate, midjourney, CogView-3, vision 模型
+- [x] **丰富插件：** 支持个性化插件扩展，已实现多角色切换、文字冒险、敏感词过滤、聊天记录总结、文档总结和对话、联网搜索等插件
+- [x] **知识库：** 通过上传知识库文件自定义专属机器人，可作为数字分身、智能客服、私域助手使用，基于 [LinkAI](https://link-ai.tech) 实现
 
 # 演示
 
-# 交流群
+https://github.com/zhayujie/chatgpt-on-wechat/assets/26161723/d5154020-36e3-41db-8706-40ce9f3f1b1e
 
-# Update logs
+Demo made by [Visionn](https://www.wangpc.cc/)
 
-> **2024.1.10：** when one reply is in processing user can stop the generation of content immediately by sending a message, and the stopped reply won't be stored in the chat history.
+# 商业支持
 
-> **2024.1.11：** add emoji in tip message, add tip message to tell if the reply is in process.
+> 我们还提供企业级的 **AI 应用平台**，包含知识库、Agent 插件、应用管理等能力，支持多平台聚合的应用接入、客户端管理、对话管理，以及提供
+> SaaS 服务、私有化部署、稳定托管接入 等多种模式。
+>
+> 目前已在私域运营、智能客服、企业效率助手等场景积累了丰富的 AI 解决方案， 在电商、文教、健康、新消费等各行业沉淀了 AI 落地的最佳实践，致力于打造助力中小企业拥抱 AI 的一站式平台。
+> 企业服务和商用咨询可联系产品顾问：
+
+<img width="240" src="https://img-1317903499.cos.ap-guangzhou.myqcloud.com/docs/product-manager-qrcode.jpg">
+
+# 开源社区
+
+添加小助手微信加入开源项目交流群：
+
+<img width="240" src="./docs/images/contact.jpg">
+
+# 更新日志
+
+> **2024.04.26：** [1.6.0 版本](https://github.com/zhayujie/chatgpt-on-wechat/releases/tag/1.6.0)，新增 Kimi 接入、gpt-4-turbo 版本升级、文件总结和语音识别问题修复
+
+> **2024.03.26：** [1.5.8 版本](https://github.com/zhayujie/chatgpt-on-wechat/releases/tag/1.5.8) 和 [1.5.7 版本](https://github.com/zhayujie/chatgpt-on-wechat/releases/tag/1.5.7)，新增 GLM-4、Claude-3 模型，edge-tts 语音支持
+
+> **2024.01.26：** [1.5.6 版本](https://github.com/zhayujie/chatgpt-on-wechat/releases/tag/1.5.6) 和 [1.5.5 版本](https://github.com/zhayujie/chatgpt-on-wechat/releases/tag/1.5.5)，钉钉接入，tool 插件升级，4-turbo 模型更新
+
+> **2023.11.11：** [1.5.3 版本](https://github.com/zhayujie/chatgpt-on-wechat/releases/tag/1.5.3) 和 [1.5.4 版本](https://github.com/zhayujie/chatgpt-on-wechat/releases/tag/1.5.4)，新增通义千问模型、Google Gemini
+
+> **2023.11.10：** [1.5.2 版本](https://github.com/zhayujie/chatgpt-on-wechat/releases/tag/1.5.2)，新增飞书通道、图像识别对话、黑名单配置
+
+> **2023.11.10：** [1.5.0 版本](https://github.com/zhayujie/chatgpt-on-wechat/releases/tag/1.5.0)，新增 `gpt-4-turbo`, `dall-e-3`, `tts` 模型接入，完善图像理解&生成、语音识别&生成的多模态能力
+
+> **2023.10.16：** 支持通过意图识别使用 LinkAI 联网搜索、数学计算、网页访问等插件，参考[插件文档](https://docs.link-ai.tech/platform/plugins)
+
+> **2023.09.26：** 插件增加 文件/文章链接 一键总结和对话的功能，使用参考：[插件说明](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/linkai#3%E6%96%87%E6%A1%A3%E6%80%BB%E7%BB%93%E5%AF%B9%E8%AF%9D%E5%8A%9F%E8%83%BD)
+
+> **2023.08.08：** 接入百度文心一言模型，通过 [插件](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/linkai) 支持 Midjourney 绘图
+
+> **2023.06.12：** 接入 [LinkAI](https://link-ai.tech/console) 平台，可在线创建领域知识库，打造专属客服机器人。使用参考 [接入文档](https://link-ai.tech/platform/link-app/wechat)。
+
+更早更新日志查看: [归档日志](/docs/version/old-version.md)
 
 # 快速开始
 
-## 准备
+快速开始文档：[项目搭建文档](https://docs.link-ai.tech/cow/quick-start)
+
+## 一、准备
 
 ### 1. Bing cookies 获取
 
 前往 [Bing 对话页面](https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx)开始一段对话。收到回复后则前往浏览器扩展商店中安装[Cookies Editor](https://chrome.google.com/webstore/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm) 回到之前的聊天页面 export json 并复制下来，后面在项目的主文件夹中添加 cookies.json 文件并把复制的内容粘贴上去保存。
 
-> 项目中默认使用的 Bing 对话模式是 creative，使用这种方式免费，快速，方便不需要消耗 Api key。
+> 默认对话模型是 openai 的 gpt-3.5-turbo，计费方式是约每 1000tokens (约 750 个英文单词 或 500 汉字，包含请求和回复) 消耗 $0.002，图片生成是 Dell E 模型，每张消耗 $0.016。
+
+项目同时也支持使用 LinkAI 接口，无需代理，可使用 文心、讯飞、GPT-3、GPT-4 等模型，支持 定制化知识库、联网搜索、MJ 绘图、文档总结和对话等能力。修改配置即可一键切换，参考 [接入文档](https://link-ai.tech/platform/link-app/wechat)。
 
 ### 2.运行环境
 
@@ -71,17 +94,30 @@ cd chatgpt-on-wechat/
 pip3 install -r requirements.txt
 ```
 
+**(3) 拓展依赖 (可选，建议安装)：**
+
+```bash
+pip3 install -r requirements-optional.txt
+```
+
+> 如果某项依赖安装失败可注释掉对应的行再继续
+
 ## 配置
 
 配置文件在根目录的`config.json`中：
 
-在`config.json`中填入配置，以下是对默认配置的说明，可根据需要进行自定义修改（请去掉注释）(since we used the model of sydney so we don't need to modify or add any info in config json about chatgpt or any other else)：
+```bash
+  cp config-template.json config.json
+```
+
+然后在`config.json`中填入配置，以下是对默认配置的说明，可根据需要进行自定义修改（请去掉注释）：
 
 ```bash
 # config.json文件内容示例
 {
   "open_ai_api_key": "YOUR API KEY",                          # 填入上面创建的 OpenAI API KEY
-  "model": "sydney",                                   # 模型名称, 支持 gpt-3.5-turbo, gpt-3.5-turbo-16k, gpt-4, wenxin, xunfei
+  "model": "gpt-3.5-turbo",                                   # 模型名称, 支持 gpt-3.5-turbo, gpt-3.5-turbo-16k, gpt-4, wenxin, xunfei, claude-3-opus-20240229
+  "claude_api_key":"YOUR API KEY"                             # 如果选用claude3模型的话，配置这个key，同时如想使用生图，语音等功能，仍需配置open_ai_api_key
   "proxy": "",                                                # 代理客户端的ip和端口，国内环境开启代理的需要填写该项，如 "127.0.0.1:7890"
   "single_chat_prefix": [""],                      # 私聊时文本需要包含该前缀才能触发机器人回复
   "single_chat_reply_prefix": "[bot] ",                       # 私聊时自动回复的前缀，用于区分真人
@@ -95,12 +131,12 @@ pip3 install -r requirements.txt
   "use_azure_chatgpt": false,                                 # 是否使用Azure ChatGPT service代替openai ChatGPT service. 当设置为true时需要设置 open_ai_api_base，如 https://xxx.openai.azure.com/
   "azure_deployment_id": "",                                  # 采用Azure ChatGPT时，模型部署名称
   "azure_api_version": "",                                    # 采用Azure ChatGPT时，API版本
-  "character_desc": "",
+  "character_desc": "你是ChatGPT, 一个由OpenAI训练的大型语言模型, 你旨在回答并解决人们的任何问题，并且可以使用多种语言与人交流。",  # 人格描述
   # 订阅消息，公众号和企业微信channel中请填写，当被订阅时会自动回复，可使用特殊占位符。目前支持的占位符有{trigger_prefix}，在程序中它会自动替换成bot的触发词。
   "subscribe_msg": "",
   "use_linkai": false,                                        # 是否使用LinkAI接口，默认关闭，开启后可国内访问，使用知识库和MJ
   "linkai_api_key": "",                                       # LinkAI Api Key
-  "linkai_app_code": ""                                       # LinkAI 应用code
+  "linkai_app_code": ""                                       # LinkAI 应用或工作流code
 }
 
 ```
@@ -109,18 +145,45 @@ pip3 install -r requirements.txt
 
 **个人聊天**
 
-- 个人聊天中，发送消息即可触发机器人，对应配置项 `single_chat_prefix` (如果不需要以前缀触发可以填写 `"single_chat_prefix": [""]`)
+- 个人聊天中，需要以 "bot"或"@bot" 为开头的内容触发机器人，对应配置项 `single_chat_prefix` (如果不需要以前缀触发可以填写 `"single_chat_prefix": [""]`)
 - 机器人回复的内容会以 "[bot] " 作为前缀， 以区分真人，对应的配置项为 `single_chat_reply_prefix` (如果不需要前缀可以填写 `"single_chat_reply_prefix": ""`)
+
+**2.群组聊天**
+
+- 群组聊天中，群名称需配置在 `group_name_white_list ` 中才能开启群聊自动回复。如果想对所有群聊生效，可以直接填写 `"group_name_white_list": ["ALL_GROUP"]`
+- 默认只要被人 @ 就会触发机器人自动回复；另外群聊天中只要检测到以 "@bot" 开头的内容，同样会自动回复（方便自己触发），这对应配置项 `group_chat_prefix`
+- 可选配置: `group_name_keyword_white_list`配置项支持模糊匹配群名称，`group_chat_keyword`配置项则支持模糊匹配群消息内容，用法与上述两个配置项相同。（Contributed by [evolay](https://github.com/evolay))
+- `group_chat_in_one_session`：使群聊共享一个会话上下文，配置 `["ALL_GROUP"]` 则作用于所有群聊
+
+**3.语音识别**
+
+- 添加 `"speech_recognition": true` 将开启语音识别，默认使用 openai 的 whisper 模型识别为文字，同时以文字回复，该参数仅支持私聊 (注意由于语音消息无法匹配前缀，一旦开启将对所有语音自动回复，支持语音触发画图)；
+- 添加 `"group_speech_recognition": true` 将开启群组语音识别，默认使用 openai 的 whisper 模型识别为文字，同时以文字回复，参数仅支持群聊 (会匹配 group_chat_prefix 和 group_chat_keyword, 支持语音触发画图)；
+- 添加 `"voice_reply_voice": true` 将开启语音回复语音（同时作用于私聊和群聊），但是需要配置对应语音合成平台的 key，由于 itchat 协议的限制，只能发送语音 mp3 文件，若使用 wechaty 则回复的是微信语音。
 
 **4.其他配置**
 
-- `model`: 模型名称，填 `sydney`
-- `proxy`：由于目前 `bing` 接口国内无法访问，需配置代理客户端的地址，详情参考 [#351](https://github.com/zhayujie/chatgpt-on-wechat/issues/351)
-- 对于图像生成，在满足个人或群组触发条件外，格式是需要用户发送图片后再对智能助理发消息即可触发
+- `model`: 模型名称，目前支持 `gpt-3.5-turbo`, `text-davinci-003`, `gpt-4`, `gpt-4-32k`, `wenxin` , `claude` , `xunfei`(其中 gpt-4 api 暂未完全开放，申请通过后可使用)
+- `temperature`,`frequency_penalty`,`presence_penalty`: Chat API 接口参数，详情参考[OpenAI 官方文档。](https://platform.openai.com/docs/api-reference/chat)
+- `proxy`：由于目前 `openai` 接口国内无法访问，需配置代理客户端的地址，详情参考 [#351](https://github.com/zhayujie/chatgpt-on-wechat/issues/351)
+- 对于图像生成，在满足个人或群组触发条件外，还需要额外的关键词前缀来触发，对应配置 `image_create_prefix `
+- 关于 OpenAI 对话及图片接口的参数配置（内容自由度、回复字数限制、图片大小等），可以参考 [对话接口](https://beta.openai.com/docs/api-reference/completions) 和 [图像接口](https://beta.openai.com/docs/api-reference/completions) 文档，在[`config.py`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/config.py)中检查哪些参数在本项目中是可配置的。
+- `conversation_max_tokens`：表示能够记忆的上下文最大字数（一问一答为一组对话，如果累积的对话字数超出限制，就会优先移除最早的一组对话）
+- `rate_limit_chatgpt`，`rate_limit_dalle`：每分钟最高问答速率、画图速率，超速后排队按序处理。
 - `clear_memory_commands`: 对话内指令，主动清空前文记忆，字符串数组可自定义指令别名。
 - `hot_reload`: 程序退出后，暂存微信扫码状态，默认关闭。
+- `character_desc` 配置中保存着你对机器人说的一段话，他会记住这段话并作为他的设定，你可以为他定制任何人格 (关于会话上下文的更多内容参考该 [issue](https://github.com/zhayujie/chatgpt-on-wechat/issues/43))
+- `subscribe_msg`：订阅消息，公众号和企业微信 channel 中请填写，当被订阅时会自动回复， 可使用特殊占位符。目前支持的占位符有{trigger_prefix}，在程序中它会自动替换成 bot 的触发词。
 
-## 运行
+**5.LinkAI 配置 (可选)**
+
+- `use_linkai`: 是否使用 LinkAI 接口，开启后可国内访问，使用知识库和 `Midjourney` 绘画, 参考 [文档](https://link-ai.tech/platform/link-app/wechat)
+- `linkai_api_key`: LinkAI Api Key，可在 [控制台](https://link-ai.tech/console/interface) 创建
+- `linkai_app_code`: LinkAI 应用 code，选填
+
+**本说明文档可能会未及时更新，当前所有可选的配置项均在该[`config.py`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/config.py)中列出。**
+
+## 三、运行
 
 ### 1.本地运行
 
@@ -130,7 +193,7 @@ pip3 install -r requirements.txt
 python3 app.py
 ```
 
-终端输出二维码后，使用微信进行扫码，当输出 "Start auto replying" 时表示自动回复程序已经成功运行了（注意：用于登录的微信需要在支付处已完成实名认证）。扫码登录后你的账号就成为机器人了，可以在微信手机端通过配置的关键词触发自动回复 (任意好友发送消息给你，或是自己发消息给好友)，参考[#142](https://github.com/zhayujie/chatgpt-on-wechat/issues/142)。
+终端输出二维码后，使用微信进行扫码，当输出 "Start auto replying" 时表示自动回复程序已经成功运行了（注意：用于登录的微信需要在支付处已完成实名认证）。扫码登录后你的账号就成为机器人了，可以在手机端通过配置的关键词触发自动回复 (任意好友发送消息给你，或是自己发消息给好友)，参考[#142](https://github.com/zhayujie/chatgpt-on-wechat/issues/142)。
 
 ### 2.服务器部署
 
@@ -153,7 +216,7 @@ nohup python3 app.py & tail -f nohup.out          # 在后台运行程序并通�
 
 > 前提是需要安装好 `docker` 及 `docker-compose`，安装成功的表现是执行 `docker -v` 和 `docker-compose version` (或 docker compose version) 可以查看到版本号，可前往 [docker 官网](https://docs.docker.com/engine/install/) 进行下载。
 
-#### (1) 下载 docker-compose.yml 文件
+**(1) 下载 docker-compose.yml 文件**
 
 ```bash
 wget https://open-1317903499.cos.ap-guangzhou.myqcloud.com/docker-compose.yml
@@ -161,7 +224,7 @@ wget https://open-1317903499.cos.ap-guangzhou.myqcloud.com/docker-compose.yml
 
 下载完成后打开 `docker-compose.yml` 修改所需配置，如 `OPEN_AI_API_KEY` 和 `GROUP_NAME_WHITE_LIST` 等。
 
-#### (2) 启动容器
+**(2) 启动容器**
 
 在 `docker-compose.yml` 所在目录下执行以下命令启动容器：
 
@@ -182,7 +245,7 @@ sudo docker compose up -d
 sudo docker logs -f chatgpt-on-wechat
 ```
 
-#### (3) 插件使用
+**(3) 插件使用**
 
 如果需要在 docker 容器中修改插件配置，可通过挂载的方式完成，将 [插件配置文件](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/plugins/config.json.template)
 重命名为 `config.json`，放置于 `docker-compose.yml` 相同目录下，并在 `docker-compose.yml` 中的 `chatgpt-on-wechat` 部分下添加 `volumes` 映射:
@@ -204,10 +267,18 @@ volumes:
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/qApznZ?referralCode=RC3znh)
 
-## 常见问题
+<br>
 
-FAQs： <https://github.com/JayGarland/chatgpt-on-wechat/wiki/FAQs>
+# 🔎 常见问题
 
-## 联系
+FAQs： <https://github.com/zhayujie/chatgpt-on-wechat/wiki/FAQs>
 
-欢迎提交 PR、Issues，以及 Star 支持一下。程序运行遇到问题可以查看 [常见问题列表](https://github.com/JayGarland/chatgpt-on-wechat/wiki/FAQs) ，其次前往 [Issues](https://github.com/zhayujie/chatgpt-on-wechat/issues) 中搜索。
+或直接在线咨询 [项目小助手](https://link-ai.tech/app/Kv2fXJcH) (beta 版本，语料完善中，回复仅供参考)
+
+## 开发
+
+欢迎接入更多应用，参考 [Terminal 代码](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/terminal/terminal_channel.py) 实现接收和发送消息逻辑即可接入。 同时欢迎增加新的插件，参考 [插件说明文档](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins)。
+
+# ✉ 联系
+
+欢迎提交 PR、Issues，以及 Star 支持一下。程序运行遇到问题可以查看 [常见问题列表](https://github.com/zhayujie/chatgpt-on-wechat/wiki/FAQs) ，其次前往 [Issues](https://github.com/zhayujie/chatgpt-on-wechat/issues) 中搜索。个人开发者可加入开源交流群参与更多讨论，企业用户可联系[产品顾问](https://img-1317903499.cos.ap-guangzhou.myqcloud.com/docs/product-manager-qrcode.jpg)咨询。
