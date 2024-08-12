@@ -38,6 +38,8 @@ class Bridge(object):
             self.btype["chat"] = const.GEMINI
         if model_type in [const.ZHIPU_AI]:
             self.btype["chat"] = const.ZHIPU_AI
+        if model_type in [const.COHERE]:
+            self.btype["chat"] = const.COHERE
         if model_type and model_type.startswith("claude-3"):
             self.btype["chat"] = const.CLAUDEAPI
 

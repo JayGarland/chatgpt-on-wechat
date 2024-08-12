@@ -20,7 +20,6 @@ def create_bot(bot_type):
     elif bot_type == const.SYDNEY:
         #jailbreak bing
         from bot.Bing.Sydneyreply import SydneyBot
-
         return SydneyBot()
 
     elif bot_type == const.CHATGPT:
@@ -73,6 +72,10 @@ def create_bot(bot_type):
     elif bot_type == const.MiniMax:
         from bot.minimax.minimax_bot import MinimaxBot
         return MinimaxBot()
+    
+    elif bot_type == const.COHERE:
+        from bot.Cohere.cohereBot import CohereBot
+        return CohereBot()
 
 
     raise RuntimeError
