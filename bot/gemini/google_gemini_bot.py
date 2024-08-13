@@ -24,13 +24,21 @@ import random
 
 
 
-# OpenAI对话模型API (可用)
+# TODO add multi patterns talk when with a pic, and by using file API
+# TODO fix environment abnormal in web fetch
 class GoogleGeminiBot(Bot):
     SAFETY_SETTINGS = {
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        'HATE': 'BLOCK_NONE',
+        'HARASSMENT': 'BLOCK_NONE',
+        'SEXUAL' : 'BLOCK_NONE',
+        'DANGEROUS' : 'BLOCK_NONE'
+    }
+    GENERATION_CONFIG = {
+        "temperature": 1.6,
+        "top_p": 0.95,
+        "top_k": 64,
+        "max_output_tokens": 8192,
+        "response_mime_type": "text/plain",
     }
     def __init__(self):
         super().__init__()
@@ -74,7 +82,7 @@ class GoogleGeminiBot(Bot):
             
             #construct gemini_messages
             system_prompt, pre_reply = self.init_prompt_botstatement(context, session)
-            model = genai.GenerativeModel("gemini-1.5-flash-latest", safety_settings=GoogleGeminiBot.SAFETY_SETTINGS, system_instruction=system_prompt)
+            model = genai.GenerativeModel("gemini-1.5-flash-latest", safety_settings=GoogleGeminiBot.SAFETY_SETTINGS, system_instruction=system_prompt, generation_config=GoogleGeminiBot.GENERATION_CONFIG)
             gemini_messages = self._convert_to_gemini_messages(GoogleGeminiBot.filter_messages(session.messages))
             logger.info(gemini_messages)
             
@@ -83,7 +91,7 @@ class GoogleGeminiBot(Bot):
             if img_cache:
                 img = self.process_img(session_id, img_cache)
                 system_prompt, noused_prereply = self.init_prompt_botstatement(context, session)
-                img_model = genai.GenerativeModel("gemini-1.5-flash-latest", safety_settings=GoogleGeminiBot.SAFETY_SETTINGS, system_instruction=system_prompt)
+                img_model = model
                 gemini_messages_img = [query, img]
                 if context["stream"]:
                     response = self.stream_reply(gemini_messages_img, context, img_model)
@@ -221,6 +229,9 @@ class GoogleGeminiBot(Bot):
             path = img_cache.get("path")
             msg.prepare()
             logger.info(f"[SYDNEY] query with images, path={path}")
+            '''
+                img = genai.upload_file(path, mime_type= "application/octet-stream")
+            '''
             with open(path, "rb") as f:
                 img_bytes = f.read()
             img = Image.open(io.BytesIO(img_bytes))
