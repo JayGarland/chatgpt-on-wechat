@@ -449,7 +449,7 @@ def check_contain(content, keyword_list):
     return None
 
 def fetch_web(context):
-    html = requests.get(context.content, proxies= {'https': conf().get('proxy') if conf().get('proxy') != '' else None}, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) '
+    html = requests.get(context.content, proxies= {'https': conf().get('proxy') if conf().get('proxy') else None}, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) '
                                 'Gecko/20100101 Firefox/113.0'})
     soup = BeautifulSoup(html.content, features= "html.parser")
     for script in soup(["script", "style"]):
