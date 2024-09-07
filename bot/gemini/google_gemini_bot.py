@@ -34,7 +34,7 @@ class GoogleGeminiBot(Bot):
         'DANGEROUS' : 'BLOCK_NONE'
     }
     GENERATION_CONFIG = {
-        "temperature": 1.6,
+        "temperature": 1,
         "top_p": 0.95,
         "top_k": 64,
         "max_output_tokens": 8192,
