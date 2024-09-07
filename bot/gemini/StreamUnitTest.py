@@ -36,7 +36,7 @@ def APIConfig(modelname):
     if modelname == "GEMINI":
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-pro-latest", safety_settings=SAFETY_SETTINGS, system_instruction=system_prompt)
+        model = genai.GenerativeModel("gemini-1.5-flash", safety_settings=SAFETY_SETTINGS, system_instruction=system_prompt)
     elif modelname == "COHERE":
         from cohere.client import Client
         model = Client(api_key)
@@ -154,21 +154,21 @@ def main():
             print("MODEL:")
             try:
                 res = model.generate_content(chatHistory, stream=True)
-            except exceptions:
-                print("Server is busy, retrying...")
-                time.sleep(3)
-                res = model.generate_content(chatHistory, stream=True)
-            for chunk in res:
-                if chunk.text:
-                    print(chunk.text, end="", flush=True)
-            chatHistory.append(
-                {
-                    "role": "model",
-                    "parts": [{"text": res.text}]
-                },
-            )
-            with open(file_path, 'w', encoding= "utf-8") as f:
-                json.dump(chatHistory, f, indent=4, ensure_ascii=False)
+            except:
+                print("\n\nPlease Retry!\n\n")
+                continue
+            if res:
+                for chunk in res:
+                    if chunk.text:
+                        print(chunk.text, end="", flush=True)
+                chatHistory.append(
+                    {
+                        "role": "model",
+                        "parts": [{"text": res.text}]
+                    },
+                )
+                with open(file_path, 'w', encoding= "utf-8") as f:
+                    json.dump(chatHistory, f, indent=4, ensure_ascii=False)
         elif modelname == "COHERE":
             CoherechatHistory = CohereHistoryTrans(ConstructQueries(chatHistory))
             message = CoherechatHistory[-1]["message"]
